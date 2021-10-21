@@ -2,6 +2,7 @@
 bin/
 obj/
 dist/
+out/
 
 # Fable generated files
 .fable
@@ -19,3 +20,6 @@ node_modules/
 # Paket
 packages/
 paket-files/
+
+# PNPM
+.pnpm-store/
