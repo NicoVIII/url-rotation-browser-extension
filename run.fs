@@ -18,6 +18,8 @@ module Task =
         |> Proc.run |> ignore
         CreateProcess.create "dotnet" [ "restore"; solution ]
         |> Proc.run |> ignore
+        CreateProcess.create "pnpm" [ "install" ]
+        |> Proc.run |> ignore
 
     let build () =
         Directory.EnumerateDirectories("modules")
