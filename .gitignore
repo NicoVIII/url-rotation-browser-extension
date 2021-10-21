@@ -1,0 +1,21 @@
+# Compiler output
+bin/
+obj/
+dist/
+
+# Fable generated files
+.fable
+*.fs.js
+bundle.js
+temp/**
+
+# Node dependencies
+node_modules/
+
+# Ionide
+.fake
+.ionide
+
+# Paket
+packages/
+paket-files/

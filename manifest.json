@@ -1,0 +1,23 @@
+{
+    "manifest_version": 2,
+    "name": "url-rotation",
+    "version": "0.1",
+    "description": "",
+    "browser_action": {
+        "default_icon": "assets/icons/icon-32.png",
+        "default_title": "Url Rotation"
+    },
+    "permissions": [
+        "tabs"
+    ],
+    "background": {
+        "scripts": [
+            "dist/background.js"
+        ]
+    },
+    "options_ui": {
+        "browser_style": true,
+        "open_in_tab": true,
+        "page": "assets/html/options.html"
+    }
+}
