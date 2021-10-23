@@ -3,10 +3,7 @@ open Fake.IO
 open System.IO
 
 module CreateProcess =
-    let create cmd args =
-        let args' = String.concat " " args
-        printfn $"> %s{cmd} %s{args'}"
-        CreateProcess.fromRawCommand cmd args
+    let create cmd args = CreateProcess.fromRawCommand cmd args
 
 type ProcessResult =
     | Ok
@@ -25,6 +22,8 @@ module Proc =
         | Error -> Error
 
     let run (proc: CreateProcess<ProcessResult<unit>>) =
+        printfn $"> %s{proc.CommandLine}"
+
         Proc.run proc
         |> (fun proc ->
             match proc.ExitCode with
@@ -78,7 +77,9 @@ module Task =
                         [ "exec"
                           "webpack-cli"
                           "--mode"
-                          "production" ]
+                          "production"
+                          "-c"
+                          $"%s{folder}/webpack.config.js" ]
                     |> CreateProcess.withWorkingDirectory folder
                     |> Proc.run
                 })
