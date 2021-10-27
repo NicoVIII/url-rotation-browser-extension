@@ -31,46 +31,64 @@ module Proc =
             | _ -> Error)
 
 type JobBuilder() =
-    member __.Yield x = x
-
     member __.Combine(res1, f2) = Proc.combine res1 f2
 
     member __.Delay f = f
 
+    member __.For(lst, f) =
+        lst
+        |> Seq.fold (fun res1 el -> Proc.combine res1 (fun () -> f el)) Ok
+
     member __.Run f = f ()
+
+    member __.Yield x = x
+    member __.Zero() = Ok
 
 let job = JobBuilder()
 
+let dotnet args =
+    CreateProcess.create "dotnet" args |> Proc.run
+
+let pnpm args =
+    CreateProcess.create "pnpm" args |> Proc.run
+
 module Task =
+    open Microsoft.VisualBasic.FileIO
+
     let restore () =
         let solution =
             Directory.EnumerateFiles(".", "*.sln") |> Seq.head
 
         job {
-            CreateProcess.create "dotnet" [ "tool"; "restore" ]
-            |> Proc.run
+            dotnet [ "tool"; "restore" ]
+            dotnet [ "restore"; solution ]
+            pnpm [ "install" ]
+        }
 
-            CreateProcess.create "dotnet" [ "restore"; solution ]
-            |> Proc.run
+    let femto () =
+        let projects =
+            [ "lib"; "modules" ]
+            |> List.map (fun folder -> Directory.EnumerateFiles(folder, "*.fsproj", SearchOption.AllDirectories))
+            |> List.reduce Seq.append
 
-            CreateProcess.create "pnpm" [ "install" ]
-            |> Proc.run
+        job {
+            for project in projects do
+                dotnet [ "femto"; project ]
         }
 
     let build mode =
-        Directory.EnumerateDirectories("modules")
-        |> Seq.map (fun folder ->
+        Directory.EnumerateFiles("modules", "*.fsproj", SearchOption.AllDirectories)
+        |> Seq.map (fun project ->
+            let folder = Path.GetDirectoryName(project)
+
             fun () ->
                 job {
-                    CreateProcess.create
-                        "dotnet"
-                        [ "fable"
-                          folder
-                          "-e"
-                          ".fs.js"
-                          "-o"
-                          $"%s{folder}/dist/" ]
-                    |> Proc.run
+                    dotnet [ "fable"
+                             folder
+                             "-e"
+                             ".fs.js"
+                             "-o"
+                             $"%s{folder}/dist/" ]
 
                     CreateProcess.create
                         "pnpm"
@@ -112,9 +130,15 @@ module Task =
 module Command =
     let restore () = Task.restore ()
 
-    let build' mode =
+    let check_dependencies () =
         job {
             restore ()
+            Task.femto ()
+        }
+
+    let build' mode =
+        job {
+            check_dependencies ()
             Task.build mode
         }
 
