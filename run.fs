@@ -57,7 +57,7 @@ module Task =
             |> Proc.run
         }
 
-    let build () =
+    let build mode =
         Directory.EnumerateDirectories("modules")
         |> Seq.map (fun folder ->
             fun () ->
@@ -77,7 +77,7 @@ module Task =
                         [ "exec"
                           "webpack-cli"
                           "--mode"
-                          "production"
+                          mode
                           "-c"
                           $"%s{folder}/webpack.config.js" ]
                     |> CreateProcess.withWorkingDirectory folder
@@ -112,15 +112,18 @@ module Task =
 module Command =
     let restore () = Task.restore ()
 
-    let build () =
+    let build' mode =
         job {
             restore ()
-            Task.build ()
+            Task.build mode
         }
+
+    let build () = build' "development"
+    let build_for_prod () = build' "production"
 
     let pack () =
         job {
-            build ()
+            build_for_prod ()
             Task.pack ()
         }
 
