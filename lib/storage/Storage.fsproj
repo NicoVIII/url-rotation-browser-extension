@@ -4,11 +4,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Background.fs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\lib\bindings\Bindings.fsproj" />
-    <ProjectReference Include="..\..\lib\storage\Storage.fsproj" />
+    <Compile Include="Storage.fs" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>
