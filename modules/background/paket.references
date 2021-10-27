@@ -1,4 +1,6 @@
 FSharp.Core
 Fable.Core
 Fable.Browser.Event
+Fable.Browser.WebStorage
 Fable.Promise
+Fable.SimpleJson

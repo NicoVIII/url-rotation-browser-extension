@@ -3,6 +3,7 @@ namespace UrlRotation
 open Fable.Core
 open Fable.Core.JsInterop
 open Fable.Import
+open Fable.SimpleJson
 open UrlRotation.BrowserBindings
 
 type PlayState =
@@ -15,13 +16,19 @@ type State =
     { play: PlayState option
       urls: string list }
 
+[<RequireQualifiedAccess>]
+module Storage =
+    open Browser
+
+    let getItem key =
+        // Sadly the fable bindings are not at all nullsafe..
+        let item = localStorage.getItem key
+        if isNull item then None else Some item
+
+    let setItem key data = localStorage.setItem (key, data)
+
 module State =
-    let create () =
-        { play = None
-          urls =
-              [ "https://www.ecosia.org/"
-                "https://duckduckgo.com/"
-                "https://www.startpage.com/" ] }
+    let create urls = { play = None; urls = urls }
 
     let setPage value state = { state with page = value }
 
@@ -31,7 +38,15 @@ module State =
     let getNextUrl state = state.urls.[nextPage state]
 
 module App =
-    let mutable state = State.create ()
+    let mutable state =
+        Storage.getItem "url_list"
+        |> function
+            | Some url_string -> Json.parseAs<string list> url_string
+            | None ->
+                [ "https://www.ecosia.org/"
+                  "https://duckduckgo.com/"
+                  "https://www.startpage.com/" ]
+        |> State.create
 
     let pause () =
         // Stop timeout
@@ -42,26 +57,25 @@ module App =
 
     let rec nextPage () =
         state.play
-        |> Option.iter
-            (fun play ->
-                promise {
-                    let timeout = JS.setTimeout nextPage 10000
+        |> Option.iter (fun play ->
+            promise {
+                let timeout = JS.setTimeout nextPage 10000
 
-                    let play =
-                        { play with
-                              currTabId = play.nextTabId
-                              nextTabId = play.currTabId
-                              page = State.nextPage state
-                              timeout = timeout }
+                let play =
+                    { play with
+                        currTabId = play.nextTabId
+                        nextTabId = play.currTabId
+                        page = State.nextPage state
+                        timeout = timeout }
 
-                    state <- { state with play = Some play }
+                state <- { state with play = Some play }
 
-                    // Activate other tab
-                    let! _ = browser.tabs.update (Some play.currTabId) !!{| active = true |}
-                    let! _ = browser.tabs.update (Some play.nextTabId) !!{| url = State.getNextUrl state |}
-                    return ()
-                }
-                |> ignore)
+                // Activate other tab
+                let! _ = browser.tabs.update (Some play.currTabId) !!{| active = true |}
+                let! _ = browser.tabs.update (Some play.nextTabId) !!{| url = State.getNextUrl state |}
+                return ()
+            }
+            |> ignore)
 
     let play () =
         promise {
@@ -87,8 +101,7 @@ module App =
         }
         |> ignore
 
-    browser.browserAction.onClicked.addListener
-        (fun _ ->
-            match state.play with
-            | Some _ -> pause ()
-            | None -> play ())
+    browser.browserAction.onClicked.addListener (fun _ ->
+        match state.play with
+        | Some _ -> pause ()
+        | None -> play ())

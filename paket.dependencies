@@ -7,3 +7,4 @@ nuget Fable.Browser.Event ~> 1.0
 nuget Fable.Browser.WebStorage ~> 1.0
 nuget Fable.Core ~> 3.0
 nuget Fable.Promise ~> 3.0
+nuget Fable.SimpleJson ~> 3.0
