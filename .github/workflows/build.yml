@@ -18,10 +18,18 @@ jobs:
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: ${{ matrix.dotnet }}
+      - name: Setup sass
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/bin/sass_arch
+          curl -sSL -o $GITHUB_WORKSPACE/bin/sass_arch/sass.tar.gz https://github.com/sass/dart-sass/releases/download/1.43.4/dart-sass-1.43.4-linux-x64.tar.gz
+          tar xzvf $GITHUB_WORKSPACE/bin/sass_arch/sass.tar.gz -C $GITHUB_WORKSPACE/bin/sass_arch
+          mv $GITHUB_WORKSPACE/bin/sass_arch/dart-sass/sass $GITHUB_WORKSPACE/bin/
+          rm -r $GITHUB_WORKSPACE/bin/sass_arch
+          echo "$GITHUB_WORKSPACE/bin" >> $GITHUB_PATH
       - name: Setup pnpm
         uses: pnpm/action-setup@v2.0.1
         with:
-          version: 6.18.0
+          version: 6.19.1
       - name: Restore
         run: dotnet run restore
       - name: Run build
