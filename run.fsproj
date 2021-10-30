@@ -12,7 +12,7 @@
   <ItemGroup>
     <PackageReference Include="Fake.Core.Process" Version="5.*" />
     <PackageReference Include="Fake.IO.FileSystem" Version="5.*" />
-    <PackageReference Include="NicoVIII.RunHelpers" Version="0.2.0" />
+    <PackageReference Include="NicoVIII.RunHelpers" Version="0.3.0" />
   </ItemGroup>
 
 </Project>
