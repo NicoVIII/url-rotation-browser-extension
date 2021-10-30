@@ -11,6 +11,11 @@ module Process =
     let create cmd args = CreateProcess.fromRawCommand cmd args
     let runAsJob = Proc.runAsJob Constant.errorExitCode
 
+[<AutoOpen>]
+module Shortcuts =
+    let sass args =
+        Process.create "sass" args |> Process.runAsJob
+
 module Task =
     let restore () =
         let modules =
@@ -30,7 +35,7 @@ module Task =
 
         job {
             for project in projects do
-                dotnet [ "femto"; project ]
+                dotnet [ "femto"; "--resolve"; project ]
         }
 
     let build mode =
@@ -41,12 +46,22 @@ module Task =
             for modul in modules do
                 let folder = Path.GetDirectoryName(modul)
 
-                dotnet [ "fable"
-                         folder
-                         "-e"
-                         ".fs.js"
-                         "-o"
-                         $"%s{folder}/dist/" ]
+                // Build SASS/CSS
+                sass [
+                    "-I"
+                    "node_modules/bulma"
+                    "assets/sass/:dist/css/"
+                ]
+
+                // Build F#/JavaScript
+                dotnet [
+                    "fable"
+                    folder
+                    "-e"
+                    ".fs.js"
+                    "-o"
+                    $"%s{folder}/dist/"
+                ]
 
                 Process.create
                     "pnpm"

@@ -8,3 +8,10 @@ trim_trailing_whitespace = true
 
 [*.md]
 trim_trailing_whitespace = false
+
+[*.{js,ts,fs}]
+indent_style = space
+indent_size = 4
+
+[*.fs]
+fsharp_single_argument_web_mode = true

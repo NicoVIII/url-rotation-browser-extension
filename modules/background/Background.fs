@@ -2,8 +2,6 @@ namespace UrlRotation
 
 open Fable.Core
 open Fable.Core.JsInterop
-open Fable.Import
-open Fable.SimpleJson
 open UrlRotation.BrowserBindings
 
 type PlayState =
@@ -13,29 +11,21 @@ type PlayState =
       timeout: int }
 
 type State =
-    { play: PlayState option
-      urls: string list }
+    { config: Config
+      play: PlayState option }
 
 module State =
-    let create urls = { play = None; urls = urls }
+    let create config = { config = config; play = None }
 
     let setPage value state = { state with page = value }
 
     let nextPage state =
-        (state.play.Value.page + 1) % state.urls.Length
+        (state.play.Value.page + 1) % state.config.urls.Length
 
-    let getNextUrl state = state.urls.[nextPage state]
+    let getNextUrl state = state.config.urls.[nextPage state]
 
 module App =
-    let mutable state =
-        Storage.getItem "url_list"
-        |> function
-            | Some url_string -> Json.parseAs<string list> url_string
-            | None ->
-                [ "https://www.ecosia.org/"
-                  "https://duckduckgo.com/"
-                  "https://www.startpage.com/" ]
-        |> State.create
+    let mutable state = Storage.loadConfig () |> State.create
 
     let pause () =
         // Stop timeout
@@ -68,14 +58,17 @@ module App =
 
     let play () =
         promise {
+            // Reload config
+            state <- { state with config = Storage.loadConfig () }
+
             let! tab =
                 !!{| active = true
-                     url = List.item 0 state.urls |}
+                     url = List.item 0 state.config.urls |}
                 |> browser.tabs.create
 
             and! tab2 =
                 !!{| active = false
-                     url = List.item 1 state.urls |}
+                     url = List.item 1 state.config.urls |}
                 |> browser.tabs.create
 
             let timeout = JS.setTimeout nextPage 10000
