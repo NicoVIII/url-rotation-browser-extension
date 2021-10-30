@@ -46,7 +46,7 @@ module Task =
         sass [
             "-I"
             "node_modules/bulma"
-            "assets/sass/:dist/css/"
+            "sass/:dist/css/"
         ]
 
     let buildModule mode modul =
@@ -93,8 +93,7 @@ module Task =
         // Register watchers
         let mode = "development"
 
-        use sassWatcher =
-            setupWatcher [ "assets/sass/" ] buildSass
+        use sassWatcher = setupWatcher [ "sass/" ] buildSass
 
         use libWatcher =
             setupWatcher [ "lib/" ] (fun () ->
@@ -152,6 +151,7 @@ module Command =
         job {
             restore ()
             Task.femto ()
+            subbuild ()
             subwatch ()
         }
 
