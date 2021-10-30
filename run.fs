@@ -7,6 +7,7 @@ open Fake.IO
 open RunHelpers
 open RunHelpers.BasicShortcuts
 open RunHelpers.FakeHelpers
+open RunHelpers.Watch
 
 module Process =
     let create cmd args = CreateProcess.fromRawCommand cmd args
@@ -83,89 +84,11 @@ module Task =
                 buildModule mode modul
         }
 
-    // Helpertype for multiple FileSystemWatchers
-    type FileSystemWatcherList =
-        { watchers: FileSystemWatcher list }
-        interface IDisposable with
-            member this.Dispose() =
-                this.watchers
-                |> List.iter (fun watcher -> watcher.Dispose())
-
-    module FileSystemWatcherList =
-        let create watchers = { watchers = watchers }
-
-        let combine watcherLists =
-            watcherLists
-            |> List.map (fun lst -> lst.watchers)
-            |> List.concat
-            |> create
-
     let watch () =
-        let setupWatcher folders onChange =
-            let filter = [ "/bin/"; "/obj/"; "/dist/" ]
-
-            let mutable working = false
-            let mutable changedWhileWorking = false
-
-            let disable (watcher: FileSystemWatcher) = watcher.EnableRaisingEvents <- false
-            let enable (watcher: FileSystemWatcher) = watcher.EnableRaisingEvents <- true
-
-            let watchers =
-                folders
-                |> List.map (fun folder ->
-                    let watcher = new FileSystemWatcher(folder)
-                    watcher.IncludeSubdirectories <- true
-                    watcher)
-
-            let rec work () =
-                working <- true
-                onChange () |> ignore
-
-                if changedWhileWorking then
-                    changedWhileWorking <- false
-                    printfn "- Do it again, there were changes while running"
-                    work ()
-                else
-                    printfn "- Waiting for changes... (enter to exit)"
-                    working <- false
-
-            let handler (args: FileSystemEventArgs) =
-                let filtered =
-                    filter |> List.exists (args.FullPath.Contains)
-
-                if not filtered then
-                    List.iter disable watchers
-
-                    let working =
-                        async {
-                            if working then
-                                changedWhileWorking <- true
-                            else
-                                work ()
-                        }
-
-                    let debouncer =
-                        async {
-                            do! Async.Sleep(500)
-                            List.iter enable watchers
-                        }
-
-                    [ working; debouncer ]
-                    |> Async.Parallel
-                    |> Async.Ignore
-                    |> Async.RunSynchronously
-
-            // Register handler
-            List.iter
-                (fun (watcher: FileSystemWatcher) ->
-                    watcher.Changed.Add handler
-                    watcher.Created.Add handler
-                    watcher.Deleted.Add handler)
-                watchers
-
-            // Enable Watchers
-            List.iter enable watchers
-            FileSystemWatcherList.create watchers
+        let setupWatcher =
+            WatcherOptions.create ()
+            |> WatcherOptions.excludeFolder "dist"
+            |> setupWatcher
 
         // Register watchers
         let mode = "development"
