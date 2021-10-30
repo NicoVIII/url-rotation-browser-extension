@@ -25,9 +25,19 @@ module State =
     let getNextUrl state = state.config.urls.[nextPage state]
 
 module App =
-    let mutable state = Storage.loadConfig () |> State.create
+    let loadConfig () =
+        Storage.loadConfig ()
+        |> (fun config ->
+            { config with
+                urls =
+                    config.urls
+                    |> List.map (fun url -> "https://" + url) })
+
+    let mutable state = loadConfig () |> State.create
 
     let pause () =
+        browser.browserAction.setIcon (!!{| path = "assets/icons/play-32.png" |})
+
         // Stop timeout
         state.play
         |> Option.iter (fun play -> play.timeout |> JS.clearTimeout)
@@ -58,8 +68,10 @@ module App =
 
     let play () =
         promise {
+            browser.browserAction.setIcon (!!{| path = "assets/icons/pause-32.png" |})
+
             // Reload config
-            state <- { state with config = Storage.loadConfig () }
+            state <- { state with config = loadConfig () }
 
             let! tab =
                 !!{| active = true
@@ -70,6 +82,14 @@ module App =
                 !!{| active = false
                      url = List.item 1 state.config.urls |}
                 |> browser.tabs.create
+
+            // We stop, when one of the two tabs is closed
+            browser.tabs.onRemoved.addListener (fun id _ ->
+                match state.play with
+                | Some play ->
+                    if play.currTabId = id || play.nextTabId = id then
+                        pause ()
+                | None -> ())
 
             let timeout = JS.setTimeout nextPage 10000
 

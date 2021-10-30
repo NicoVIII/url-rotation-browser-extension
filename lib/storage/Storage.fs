@@ -24,9 +24,9 @@ module Storage =
             | Some configJson -> Json.parseAs<Config> configJson
             | None ->
                 { urls =
-                    [ "https://www.ecosia.org/"
-                      "https://duckduckgo.com/"
-                      "https://www.startpage.com/" ] }
+                    [ "www.ecosia.org/"
+                      "duckduckgo.com/"
+                      "www.startpage.com/" ] }
 
     let saveConfig (config: Config) =
         Json.stringify config

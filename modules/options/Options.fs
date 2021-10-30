@@ -30,6 +30,8 @@ module Options =
             Map.toList state.urls
             |> List.sortBy fst
             |> List.map snd
+            // TODO: check for validity
+            |> List.filter (fun value -> value <> "")
             |> (fun urls -> { Config.urls = urls })
             |> Storage.saveConfig
 
@@ -40,8 +42,6 @@ module Options =
         let urls =
             state.urls
             // We don't save empty urls
-            // TODO: check for validity
-            |> Map.filter (fun _ value -> value <> "")
             |> Map.toList
             |> List.sortBy fst
             |> List.map snd
@@ -57,11 +57,20 @@ module Options =
                         prop.children [
                             for (i, url) in urls do
                                 Bulma.field.div [
-                                    Bulma.control.div [
-                                        Bulma.input.text [
-                                            prop.placeholder "url"
-                                            prop.value url
-                                            prop.onChange (fun url -> ChangeUrl(i, url) |> dispatch)
+                                    field.hasAddons
+                                    prop.children [
+                                        Bulma.control.div [
+                                            Bulma.button.button [
+                                                button.isStatic
+                                                prop.text "https://"
+                                            ]
+                                        ]
+                                        Bulma.control.div [
+                                            Bulma.input.text [
+                                                prop.placeholder "url"
+                                                prop.value url
+                                                prop.onChange (fun url -> ChangeUrl(i, url) |> dispatch)
+                                            ]
                                         ]
                                     ]
                                 ]

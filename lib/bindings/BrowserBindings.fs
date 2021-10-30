@@ -7,14 +7,25 @@ type BrowserEvent = Event
 
 module BrowserBindings =
     module Internal =
-        type Event =
+        type BrowserActionClickEvent =
             abstract addListener : (BrowserEvent -> unit) -> unit
 
+        type IconDetails =
+            abstract path : string
+
         type BrowserAction =
-            abstract onClicked : Event
+            abstract onClicked : BrowserActionClickEvent
+            abstract setIcon : IconDetails -> unit
 
         type Runtime =
             abstract openOptionsPage : unit -> unit
+
+        type RemoveInfo =
+            abstract windowId : int
+            abstract isWindowClosing : bool
+
+        type TabsRemoveEvent =
+            abstract addListener : (int -> RemoveInfo -> unit) -> unit
 
         module Tabs =
             [<StringEnum>]
@@ -81,6 +92,8 @@ module BrowserBindings =
             type T =
                 abstract create : CreateProperties -> JS.Promise<Tab>
                 abstract update : int option -> UpdateProperties -> JS.Promise<Tab>
+
+                abstract onRemoved : TabsRemoveEvent
 
         type Browser =
             abstract browserAction : BrowserAction
