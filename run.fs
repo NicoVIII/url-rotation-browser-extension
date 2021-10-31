@@ -75,15 +75,6 @@ module Task =
             |> Process.runAsJob
         }
 
-    let buildModules mode =
-        job {
-            let modules =
-                Directory.EnumerateFiles("modules", "*.fsproj", SearchOption.AllDirectories)
-
-            for modul in modules do
-                buildModule mode modul
-        }
-
     let watch () =
         let setupWatcher =
             WatcherOptions.create ()
@@ -95,15 +86,11 @@ module Task =
 
         use sassWatcher = setupWatcher [ "sass/" ] buildSass
 
-        use libWatcher =
-            setupWatcher [ "lib/" ] (fun () ->
-                printfn "Change!"
-                buildModules mode)
-
         use moduleWatcher =
             Directory.EnumerateFiles("modules", "*.fsproj", SearchOption.AllDirectories)
             |> Seq.toList
-            |> List.map (fun modul -> setupWatcher [ Path.GetDirectoryName modul ] (fun () -> buildModule mode modul))
+            |> List.map (fun modul ->
+                setupWatcher [ "lib/"; Path.GetDirectoryName modul ] (fun () -> buildModule mode modul))
             |> FileSystemWatcherList.combine
 
         printfn "Waiting for changes... (enter to exit)"
@@ -111,9 +98,14 @@ module Task =
         Ok
 
     let build mode =
+        let modules =
+            Directory.EnumerateFiles("modules", "*.fsproj", SearchOption.AllDirectories)
+
         job {
             buildSass ()
-            buildModules mode
+
+            for modul in modules do
+                buildModule mode modul
         }
 
     let pack () =
