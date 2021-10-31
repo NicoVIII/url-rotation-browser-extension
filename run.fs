@@ -112,24 +112,42 @@ module Task =
         let folder = "./out"
 
         job {
+            printfn "Clean %s" folder
             Shell.cleanDir folder
 
+            printfn "Copy files to %s..." folder
             // We need the manifest, the assets and the scripts
             Shell.copy folder [ "manifest.json" ]
 
             [ "assets"; "dist" ]
             |> List.iter (fun dir -> Shell.copyDir $"%s{folder}/%s{dir}" dir (fun _ -> true))
 
+            // We remove the content_security_policy, which is only needed for development
+            printfn "Remove csp line from manifest.json"
+
+            File.ReadAllLines $"{folder}/manifest.json"
+            |> Array.filter (fun line -> not (line.Contains("\"content_security_policy\"")))
+            |> (fun content -> File.WriteAllLines($"{folder}/manifest.json", content))
+
+            // At first we lint the source
+            pnpm [
+                "exec"
+                "web-ext"
+                "lint"
+                "-s"
+                folder
+            ]
+
             // Now we can bundle stuff together
-            Process.create
-                "pnpm"
-                [ "exec"
-                  "web-ext"
-                  "build"
-                  "-a"
-                  folder ]
-            |> CreateProcess.withWorkingDirectory folder
-            |> Process.runAsJob
+            pnpm [
+                "exec"
+                "web-ext"
+                "build"
+                "-s"
+                folder
+                "-a"
+                folder
+            ]
         }
 
 module Command =

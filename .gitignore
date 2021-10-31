@@ -23,3 +23,4 @@ paket-files/
 
 # PNPM
 .pnpm-store/
+.pnpm-debug.log

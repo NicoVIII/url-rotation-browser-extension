@@ -5,5 +5,5 @@ module.exports = {
     output: {
         filename: 'background.js',
         path: path.resolve(__dirname, '../../dist/'),
-    },
+    }
 };
