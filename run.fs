@@ -53,6 +53,10 @@ module Task =
         job {
             let folder = Path.GetDirectoryName(modul: string)
 
+            let fableTarget = $"%s{folder}/dist/"
+            printfn "- Clean %s" fableTarget
+            Shell.cleanDir fableTarget
+
             // Build F#/JavaScript
             dotnet [
                 "fable"
@@ -60,7 +64,7 @@ module Task =
                 "-e"
                 ".fs.js"
                 "-o"
-                $"%s{folder}/dist/"
+                $"%s{fableTarget}"
             ]
 
             Process.create
