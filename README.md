@@ -8,6 +8,6 @@ It is inspired by [Tab Rotate for Chrome](https://github.com/KevinSheedy/chrome-
 ## Development
 
 You should use the devcontainer for VScode to develop this.
-You can build this with `dotnet run build`. After that you can open
-`about:debugging` in Firefox and add the manifest.json as a temporary extension
+You can build this and enter watch mode with `dotnet run watch`.
+After that you can open `about:debugging` in Firefox and add the manifest.json as a temporary extension
 for testing.
