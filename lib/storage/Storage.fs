@@ -1,6 +1,11 @@
 namespace UrlRotation
 
-type Config = { urls: string list }
+[<Measure>]
+type s
+
+type Config =
+    { timePerUrl: int<s>
+      urls: string list }
 
 [<RequireQualifiedAccess>]
 module Storage =
@@ -26,7 +31,9 @@ module Storage =
                 { urls =
                     [ "www.ecosia.org/"
                       "duckduckgo.com/"
-                      "www.startpage.com/" ] }
+                      "www.startpage.com/" ]
+
+                  timePerUrl = 60<s> }
 
     let saveConfig (config: Config) =
         Json.stringify config

@@ -20,9 +20,17 @@ module BrowserBindings =
         type Runtime =
             abstract openOptionsPage : unit -> unit
 
+        type ActiveInfo =
+            abstract previousTabId : int
+            abstract tabId : int
+            abstract windowId : int
+
         type RemoveInfo =
             abstract windowId : int
             abstract isWindowClosing : bool
+
+        type TabsActivateEvent =
+            abstract addListener : (ActiveInfo -> unit) -> unit
 
         type TabsRemoveEvent =
             abstract addListener : (int -> RemoveInfo -> unit) -> unit
@@ -93,6 +101,7 @@ module BrowserBindings =
                 abstract create : CreateProperties -> JS.Promise<Tab>
                 abstract update : int option -> UpdateProperties -> JS.Promise<Tab>
 
+                abstract onActivated : TabsActivateEvent
                 abstract onRemoved : TabsRemoveEvent
 
         type Browser =

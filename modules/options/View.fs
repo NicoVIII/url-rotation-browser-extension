@@ -5,7 +5,40 @@ open Feliz.Bulma
 
 [<RequireQualifiedAccess>]
 module View =
-    let renderInput i (url: string) dispatch =
+    let renderTimeInput (time: int<s>) dispatch =
+        Bulma.field.div [
+            Bulma.label "Time per Url"
+            Bulma.control.div [
+                Bulma.field.div [
+                    field.hasAddons
+                    prop.children [
+                        Bulma.control.div [
+                            control.isExpanded
+                            prop.children [
+                                Bulma.input.number [
+                                    prop.min 1
+                                    prop.max 99999
+                                    prop.value (int time)
+                                    prop.onChange (
+                                        LanguagePrimitives.Int32WithMeasure
+                                        >> ChangeTime
+                                        >> dispatch
+                                    )
+                                ]
+                            ]
+                        ]
+                        Bulma.control.div [
+                            Bulma.button.button [
+                                button.isStatic
+                                prop.text "s"
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]
+
+    let renderUrlInput i (url: string) dispatch =
         Bulma.field.div [
             field.hasAddons
             prop.children [
@@ -45,8 +78,12 @@ module View =
                 e.preventDefault ()
                 Save |> dispatch)
             prop.children [
+                Bulma.subtitle "General"
+                renderTimeInput state.timePerUrl dispatch
+
+                Bulma.subtitle "Urls"
                 for (i, url) in urls do
-                    renderInput i url dispatch
+                    renderUrlInput i url dispatch
 
                 Bulma.button.button [
                     if state.saved then

@@ -24,7 +24,10 @@ module State =
 
     let getNextUrl state = state.config.urls.[nextPage state]
 
-module App =
+[<AutoOpen>]
+module Functions =
+    let setTimeout (time: int<s>) fnc = JS.setTimeout fnc ((int time) * 1000)
+
     let loadConfig () =
         Storage.loadConfig ()
         |> (fun config ->
@@ -33,6 +36,7 @@ module App =
                     config.urls
                     |> List.map (fun url -> "https://" + url) })
 
+module App =
     let mutable state = loadConfig () |> State.create
 
     let pause () =
@@ -48,7 +52,8 @@ module App =
         state.play
         |> Option.iter (fun play ->
             promise {
-                let timeout = JS.setTimeout nextPage 10000
+                let timeout =
+                    setTimeout state.config.timePerUrl nextPage
 
                 let play =
                     { play with
@@ -91,7 +96,8 @@ module App =
                         pause ()
                 | None -> ())
 
-            let timeout = JS.setTimeout nextPage 10000
+            let timeout =
+                setTimeout state.config.timePerUrl nextPage
 
             let playing =
                 { page = 0
@@ -103,6 +109,7 @@ module App =
         }
         |> ignore
 
+    // Start / Stop from browser action
     browser.browserAction.onClicked.addListener (fun _ ->
         match state.play with
         | Some _ -> pause ()
