@@ -9,7 +9,7 @@
     <Compile Include="App.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\lib\storage\Storage.fsproj" />
+    <ProjectReference Include="..\..\lib\core\Core.fsproj" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>
