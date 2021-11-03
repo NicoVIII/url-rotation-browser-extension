@@ -13,7 +13,7 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Background", "modules\backg
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "run", "run.fsproj", "{8504C959-B4E3-4070-BB04-398FD4CFABB5}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Storage", "lib\storage\Storage.fsproj", "{1ECCB5D7-E241-42BB-887D-55FD49D4A2B2}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Core", "lib\core\Core.fsproj", "{1ECCB5D7-E241-42BB-887D-55FD49D4A2B2}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Options", "modules\options\Options.fsproj", "{FE52C525-77FC-4686-B1EF-E45887CAD22F}"
 EndProject

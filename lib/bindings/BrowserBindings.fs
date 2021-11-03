@@ -99,6 +99,8 @@ module BrowserBindings =
 
             type T =
                 abstract create : CreateProperties -> JS.Promise<Tab>
+                abstract remove : int -> JS.Promise<unit>
+                abstract remove : ResizeArray<int> -> JS.Promise<unit>
                 abstract update : int option -> UpdateProperties -> JS.Promise<Tab>
 
                 abstract onActivated : TabsActivateEvent
