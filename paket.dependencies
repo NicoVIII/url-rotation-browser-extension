@@ -9,6 +9,6 @@ nuget Fable.Browser.WebStorage ~> 1.0
 nuget Fable.Elmish ~> 3.1
 nuget Fable.Elmish.React ~> 3.0
 nuget Fable.Promise ~> 3.0
-nuget Fable.SimpleJson ~> 3.0
 nuget Feliz ~> 1.0
 nuget Feliz.Bulma ~> 2.0
+nuget Thoth.Json ~> 5.0

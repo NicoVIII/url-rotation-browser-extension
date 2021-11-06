@@ -9,7 +9,7 @@ type Config =
 
 [<RequireQualifiedAccess>]
 module Storage =
-    open Fable.SimpleJson
+    open Thoth.Json
 
     module Internal =
         open Browser
@@ -24,17 +24,23 @@ module Storage =
         let setItem key data = localStorage.setItem (key, data)
 
     let loadConfig () =
+        let buildDefault () =
+            { urls =
+                [ "www.ecosia.org/"
+                  "duckduckgo.com/"
+                  "www.startpage.com/" ]
+
+              timePerUrl = 60<s> }
+
         Internal.getItem Internal.configKey
         |> function
-            | Some configJson -> Json.parseAs<Config> configJson
-            | None ->
-                { urls =
-                    [ "www.ecosia.org/"
-                      "duckduckgo.com/"
-                      "www.startpage.com/" ]
-
-                  timePerUrl = 60<s> }
+            | Some configJson ->
+                Decode.Auto.fromString<Config> configJson
+                |> function
+                    | Ok config -> config
+                    | Error _ -> buildDefault ()
+            | None -> buildDefault ()
 
     let saveConfig (config: Config) =
-        Json.stringify config
+        Encode.Auto.toString (0, config)
         |> Internal.setItem Internal.configKey
