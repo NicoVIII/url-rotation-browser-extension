@@ -18,6 +18,10 @@ module Shortcuts =
     let sass args =
         Process.create "sass" args |> Process.runAsJob
 
+type BuildMode =
+    | Debug
+    | Release
+
 module Task =
     let restore () =
         let modules =
@@ -42,11 +46,16 @@ module Task =
                 dotnet [ "femto"; "--resolve"; project ]
         }
 
-    let buildSass () =
+    let buildSass mode =
+        let path = "dist/css/"
+        printfn "Clean %s" path
+        Shell.cleanDir path
+
         sass [
+            if mode = Release then "--no-source-map"
             "-I"
             "node_modules/bulma"
-            "sass/:dist/css/"
+            $"sass/:{path}"
         ]
 
     let buildModule mode modul =
@@ -63,6 +72,9 @@ module Task =
                 folder
                 "-e"
                 ".fs.js"
+                if mode = Debug then
+                    "--symbols"
+                    "DEBUG"
                 "-o"
                 $"%s{fableTarget}"
             ]
@@ -72,7 +84,9 @@ module Task =
                 [ "exec"
                   "webpack-cli"
                   "--mode"
-                  mode
+                  match mode with
+                  | Debug -> "development"
+                  | Release -> "production"
                   "-c"
                   $"%s{folder}/webpack.config.js" ]
             |> CreateProcess.withWorkingDirectory folder
@@ -86,9 +100,10 @@ module Task =
             |> setupWatcher
 
         // Register watchers
-        let mode = "development"
+        let mode = Debug
 
-        use sassWatcher = setupWatcher [ "sass/" ] buildSass
+        use sassWatcher =
+            setupWatcher [ "sass/" ] (fun () -> buildSass Debug)
 
         use moduleWatcher =
             Directory.EnumerateFiles("modules", "*.fsproj", SearchOption.AllDirectories)
@@ -106,7 +121,7 @@ module Task =
             Directory.EnumerateFiles("modules", "*.fsproj", SearchOption.AllDirectories)
 
         job {
-            buildSass ()
+            buildSass mode
 
             for modul in modules do
                 buildModule mode modul
@@ -157,7 +172,7 @@ module Task =
 module Command =
     let restore () = Task.restore ()
 
-    let subbuild () = Task.build "development"
+    let subbuild () = Task.build Debug
 
     let subwatch () = Task.watch ()
 
@@ -180,7 +195,7 @@ module Command =
         job {
             restore ()
             Task.femto ()
-            Task.build "production"
+            Task.build Release
             Task.pack ()
         }
 
