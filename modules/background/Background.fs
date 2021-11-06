@@ -99,6 +99,7 @@ type Msg =
     | SetTimeout of int
     | SetCurrentTab of TabId
     | SetConfig of Config
+    | PreparePlay
     | Play
     | Pause
     | SwitchPlay
@@ -110,23 +111,15 @@ type Action =
     | NoAction
     | Actions of Action list
     | SetActionIcon of Icon
-    | WaitForPromise of ((Msg -> unit) -> unit)
     | SendMsg of Msg
     | CloseTabs of TabId list
     | SetTimeout of Msg * int<s>
     | ClearTimeout of int
     | ActivateNextTab of TabId * TabId * string
     | OpenTabs of string list
-    | LoadConfig
+    | LoadConfig of Msg
 
 module Action =
-    [<Obsolete("Promises should only be used INSIDE Actions, so create an own one instead")>]
-    let waitForPromise (getPromise: unit -> JS.Promise<'a>) (msg: 'a -> Msg) =
-        fun dispatch ->
-            let promise = getPromise ()
-            promise.``then`` (msg >> dispatch) |> ignore
-        |> WaitForPromise
-
     let combine a1 a2 =
         match a1, a2 with
         | Actions a1, Actions a2 -> [ a1; a2 ] |> List.concat
@@ -195,14 +188,19 @@ module App =
 
             { state with play = play }, NoAction
         | SetConfig config -> { state with config = config }, NoAction
-        | Play ->
+        | PreparePlay ->
             let state =
                 { state with play = PartialPlayState.create 0 |> Creating |> Some }
 
             let action =
                 [ SetActionIcon Icon.Pause
-                  LoadConfig
-                  [ 0; 1 ]
+                  LoadConfig(Play) ]
+                |> Action.concat
+
+            state, action
+        | Play ->
+            let action =
+                [ [ 0; 1 ]
                   |> List.map (fun i -> List.item i state.config.urls)
                   |> OpenTabs
                   SetTimeout(NextPage, state.config.timePerUrl) ]
@@ -230,7 +228,7 @@ module App =
             { state with play = None }, action
         | SwitchPlay ->
             match state.play with
-            | None -> state, SendMsg Play
+            | None -> state, SendMsg PreparePlay
             | Some _ -> state, SendMsg Pause
         | NextPage ->
             let play, action =
@@ -267,13 +265,10 @@ module App =
         | OnTabActivate id ->
             match state.play with
             | Some (Ready { tabs = tabs })
-            | Some (Creating { tabs = tabs }) when List.contains id tabs ->
-                state, NoAction
+            | Some (Creating { tabs = tabs }) when List.contains id tabs -> state, NoAction
             | Some (Creating _)
-            | None ->
-                state, NoAction
-            | Some (Ready _) ->
-                state, SendMsg Pause
+            | None -> state, NoAction
+            | Some (Ready _) -> state, SendMsg Pause
         | OnTabRemove id ->
             match state.play with
             | Some (Ready play) when List.contains id play.tabs ->
@@ -286,12 +281,17 @@ module App =
             | None -> state, NoAction
 
     let rec processAction dispatch action =
+#if DEBUG
+        match action with
+        | NoAction
+        | Actions _ -> ()
+        | action -> printfn "Triggered action: %A" action
+#endif
         match action with
         | NoAction -> () |> Promise.wrapValue
         | SetActionIcon icon ->
             browser.browserAction.setIcon (!!{| path = Icon.getPath icon |})
             |> Promise.wrapValue
-        | WaitForPromise fnc -> fnc dispatch |> Promise.wrapValue
         | Actions actions ->
             promise {
                 for action in actions do
@@ -335,7 +335,11 @@ module App =
                 let! _ = browser.tabs.update (currentTabId |> TabId.toInt |> Some) !!{| url = nextNextUrl |}
                 dispatch (SetCurrentTab nextTabId)
             }
-        | LoadConfig -> promise { loadConfig () |> SetConfig |> dispatch }
+        | LoadConfig msg ->
+            promise {
+                loadConfig () |> SetConfig |> dispatch
+                dispatch msg
+            }
 
     let registerListeners dispatch =
         // Start / Stop from browser action
@@ -355,6 +359,10 @@ module App =
     let queue = new Queue<Msg>()
 
     let rec dispatch msg : unit =
+#if DEBUG
+        printfn "Send msg: %A" msg
+#endif
+
         let rec processMsg msg =
             let state', action = update msg state
             state <- state'

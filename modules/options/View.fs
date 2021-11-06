@@ -5,6 +5,31 @@ open Feliz.Bulma
 
 [<RequireQualifiedAccess>]
 module View =
+    let renderTab state dispatch tab text =
+        Bulma.tab [
+            if (getl StateLens.tab state) = tab then
+                Bulma.tab.isActive
+            prop.children [
+                Html.a [
+                    prop.text (text: string)
+                    prop.onClick (fun _ -> SetTab tab |> dispatch)
+                ]
+            ]
+        ]
+
+    let renderTabs state dispatch =
+        let renderTab = renderTab state dispatch
+
+        Bulma.tabs [
+            tabs.isMedium
+            prop.children [
+                Html.ul [
+                    renderTab Tab.GUI "GUI"
+                    renderTab Tab.Json "Json"
+                ]
+            ]
+        ]
+
     let renderTimeInput (time: int<s>) dispatch =
         Bulma.field.div [
             Bulma.label "Time per Url"
@@ -64,7 +89,8 @@ module View =
     let renderForm state dispatch =
         // We always want one empty field for new urls
         let urls =
-            state.urls
+            state
+            |> getl StateLens.urls
             // We don't save empty urls
             |> Map.toList
             |> List.sortBy fst
@@ -79,14 +105,14 @@ module View =
                 Save |> dispatch)
             prop.children [
                 Bulma.subtitle "General"
-                renderTimeInput state.timePerUrl dispatch
+                renderTimeInput (getl StateLens.timePerUrl state) dispatch
 
                 Bulma.subtitle "Urls"
                 for (i, url) in urls do
                     renderUrlInput i url dispatch
 
                 Bulma.button.button [
-                    if state.saved then
+                    if getl StateLens.saved state then
                         color.isSuccess
                         prop.text "Saved"
                     else
@@ -95,6 +121,27 @@ module View =
                 ]
             ]
         ]
+
+    let renderJsonView state =
+        let json = getl StateLens.json state
+        let rows = json.Split '\n' |> Array.length
+
+        Bulma.control.div [
+            control.isExpanded
+            prop.children [
+                Bulma.textarea [
+                    textarea.hasFixedSize
+                    prop.value json
+                    prop.readOnly true
+                    prop.rows rows
+                ]
+            ]
+        ]
+
+    let renderTabView state dispatch =
+        match getl StateLens.tab state with
+        | Tab.GUI -> renderForm state dispatch
+        | Tab.Json -> renderJsonView state
 
     let render state dispatch =
         Bulma.columns [
@@ -107,7 +154,8 @@ module View =
                     column.isFourFifthsMobile
                     prop.children [
                         Bulma.title "Settings"
-                        renderForm state dispatch
+                        renderTabs state dispatch
+                        renderTabView state dispatch
                     ]
                 ]
             ]

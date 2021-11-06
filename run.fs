@@ -73,7 +73,7 @@ module Task =
                 "-e"
                 ".fs.js"
                 if mode = Debug then
-                    "--symbols"
+                    "--define"
                     "DEBUG"
                 "-o"
                 $"%s{fableTarget}"
