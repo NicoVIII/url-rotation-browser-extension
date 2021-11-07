@@ -21,7 +21,13 @@ It will show a play button if it is paused and a pause button if the rotation is
 
 ![Visualization](images/diagram.svg)
 
-You should use the devcontainer for VScode to develop this.
-You can build this and enter watch mode with `dotnet run watch`.
+You should use the devcontainer for VScode to develop this. For this you need VScode and Docker installed.
+For VScode you should install the "Remote - Containers" extension. After that you can open the repo
+in the devcontainer with the "Remote Containers: Rebuild and Reopen in Container" command.
+
+You can then build this and enter watch mode with `dotnet run watch`.
 After that you can open `about:debugging` in Firefox and add the manifest.json as a temporary extension
 for testing.
+
+If you want to just build once, run `dotnet run build`.
+If you want to pack the extension ready to use (for Firefox only atm) you can run `dotnet run pack`.
