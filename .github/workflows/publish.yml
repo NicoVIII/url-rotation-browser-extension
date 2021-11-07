@@ -6,11 +6,11 @@ on:
       - 'v*.*.*'
 
 jobs:
-  build:
+  publish:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        dotnet: [5.0.400]
+        dotnet: [5.0.402]
     runs-on: ${{ matrix.os }}
 
     steps:
