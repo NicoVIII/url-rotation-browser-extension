@@ -1,5 +1,9 @@
 # Url Rotation
 
+[![GitHub Actions Build](https://img.shields.io/github/workflow/status/NicoVIII/url-rotation-browser-extension/Build?style=flat-square)](https://github.com/NicoVIII/url-rotation-browser-extension/actions/workflows/build.yml)
+![Last commit](https://img.shields.io/github/last-commit/NicoVIII/url-rotation-browser-extension?style=flat-square)
+[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?style=flat-square&logo=gitpod)](https://gitpod.io/#https://github.com/NicoVIII/url-rotation-browser-extension)
+
 This is a browser extension in development which can be used for screens which should show different
 urls. It is made for Firefox but will be made compatible with Chrome, if its ready.
 

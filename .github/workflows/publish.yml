@@ -1,0 +1,61 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        dotnet: [5.0.400]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Get version from tag
+        id: tag_name
+        run: |
+          echo ::set-output name=current_version::${GITHUB_REF#refs/tags/v}
+        shell: bash
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: ${{ matrix.dotnet }}
+      - name: Setup sass
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/bin/sass_arch
+          curl -sSL -o $GITHUB_WORKSPACE/bin/sass_arch/sass.tar.gz https://github.com/sass/dart-sass/releases/download/1.43.4/dart-sass-1.43.4-linux-x64.tar.gz
+          tar xzvf $GITHUB_WORKSPACE/bin/sass_arch/sass.tar.gz -C $GITHUB_WORKSPACE/bin/sass_arch
+          mv $GITHUB_WORKSPACE/bin/sass_arch/dart-sass/sass $GITHUB_WORKSPACE/bin/
+          rm -r $GITHUB_WORKSPACE/bin/sass_arch
+          echo "$GITHUB_WORKSPACE/bin" >> $GITHUB_PATH
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2.0.1
+        with:
+          version: 6.20.3
+      - name: Restore
+        run: dotnet run restore
+      - name: Get Changelog Entry
+        id: changelog_reader
+        uses: mindsers/changelog-reader-action@v2
+        with:
+          version: ${{ steps.tag_name.outputs.current_version }}
+          path: ./CHANGELOG.md
+      - name: Pack it
+        run: dotnet run pack
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          token: "${{ secrets.GITHUB_TOKEN }}"
+          body: ${{ steps.changelog_reader.outputs.changes }}
+          prerelease: ${{ steps.changelog_reader.outputs.status == 'prereleased' }}
+          draft: ${{ steps.changelog_reader.outputs.status == 'unreleased' }}
+          files: |
+            out/url-rotation-*.zip
+            LICENSE.txt
+            CHANGELOG.md
+            README.md
