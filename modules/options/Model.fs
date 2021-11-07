@@ -1,7 +1,5 @@
 namespace UrlRotation
 
-open Thoth.Json
-
 [<RequireQualifiedAccess>]
 type Tab =
     | GUI
@@ -30,6 +28,10 @@ module WipConfig =
         { Config.urls = urls
           timePerUrl = config.timePerUrl }
 
+    let fromConfig (config: Config) =
+        { urls = config.urls |> List.indexed |> Map.ofList
+          timePerUrl = config.timePerUrl }
+
 module WipConfigLens =
     let urls =
         Lens((fun config -> config.urls), (fun config urls -> { config with urls = urls }))
@@ -41,6 +43,7 @@ type State =
     { config: WipConfig
       saved: bool
       json: string
+      jsonInvalid: bool
       tab: Tab }
 
 module StateLens =
@@ -49,6 +52,9 @@ module StateLens =
 
     let json =
         Lens((fun state -> state.json), (fun state json -> { state with json = json }))
+
+    let jsonInvalid =
+        Lens((fun state -> state.jsonInvalid), (fun state jsonInvalid -> { state with jsonInvalid = jsonInvalid }))
 
     let saved =
         Lens((fun state -> state.saved), (fun state saved -> { state with saved = saved }))
@@ -62,21 +68,20 @@ module StateLens =
 type Msg =
     | ChangeUrl of key: int * value: string
     | ChangeTime of time: int<s>
+    | SetJson of json: string
     | SetTab of tab: Tab
     | Save
 
 [<RequireQualifiedAccess>]
 module Model =
     let init () =
-        let config = Storage.loadConfig ()
-
         let wipConfig =
-            { urls = config.urls |> List.indexed |> Map.ofList
-              timePerUrl = config.timePerUrl }
+            Storage.loadConfig () |> WipConfig.fromConfig
 
         { config = wipConfig
           saved = false
           json = ""
+          jsonInvalid = false
           tab = Tab.GUI }
 
 [<RequireQualifiedAccess>]
@@ -85,7 +90,8 @@ module Update =
         match msg with
         // For all changing messages, we disable the saved flag
         | ChangeUrl _
-        | ChangeTime _ -> { state with saved = false }
+        | ChangeTime _
+        | SetJson _ -> { state with saved = false }
         | _ -> state
 
     let perform msg state =
@@ -100,8 +106,19 @@ module Update =
 
             state
             // Refresh json
-            |> setl StateLens.json (Encode.Auto.toString (2, config))
+            |> setl StateLens.json (toJson 2 config)
+            |> setl StateLens.jsonInvalid false
             |> setl StateLens.tab tab
+        | SetJson json ->
+            fromJson<Config> json
+            |> function
+                | Ok config ->
+                    // The json is valid, we can use it to fill the other settings
+                    config
+                    |> WipConfig.fromConfig
+                    |> setlr StateLens.config state
+                    |> setl StateLens.jsonInvalid false
+                | Error _ -> state |> setl StateLens.jsonInvalid true
         | Save ->
             WipConfig.toConfig state.config
             |> Storage.saveConfig

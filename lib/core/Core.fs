@@ -7,10 +7,15 @@ type Config =
     { timePerUrl: int<s>
       urls: string list }
 
-[<RequireQualifiedAccess>]
-module Storage =
+[<AutoOpen>]
+module Json =
     open Thoth.Json
 
+    let inline toJson spaces config = Encode.Auto.toString (spaces, config)
+    let inline fromJson<'a> json = Decode.Auto.fromString<'a> json
+
+[<RequireQualifiedAccess>]
+module Storage =
     module Internal =
         open Browser
 
@@ -35,12 +40,12 @@ module Storage =
         Internal.getItem Internal.configKey
         |> function
             | Some configJson ->
-                Decode.Auto.fromString<Config> configJson
+                fromJson<Config> configJson
                 |> function
                     | Ok config -> config
                     | Error _ -> buildDefault ()
             | None -> buildDefault ()
 
     let saveConfig (config: Config) =
-        Encode.Auto.toString (0, config)
+        toJson 0 config
         |> Internal.setItem Internal.configKey

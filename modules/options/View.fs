@@ -122,18 +122,33 @@ module View =
             ]
         ]
 
-    let renderJsonView state =
+    let renderJsonView state dispatch =
         let json = getl StateLens.json state
         let rows = json.Split '\n' |> Array.length
 
-        Bulma.control.div [
-            control.isExpanded
-            prop.children [
-                Bulma.textarea [
-                    textarea.hasFixedSize
-                    prop.value json
-                    prop.readOnly true
-                    prop.rows rows
+        Html.div [
+            Bulma.box [
+                prop.text "You can save this json elsewhere to persist or transfer your settings."
+            ]
+            Html.div [
+                if state.jsonInvalid then
+                    Bulma.notification [
+                        color.hasBackgroundDanger
+                        color.hasTextLight
+                        prop.children [
+                            Html.text
+                                "Invalid json! If you change the tab, your changes will be reverted to the last valid state."
+                        ]
+                    ]
+            ]
+            Bulma.control.div [
+                control.isExpanded
+                prop.children [
+                    Bulma.textarea [
+                        prop.rows rows
+                        prop.defaultValue json
+                        prop.onChange (SetJson >> dispatch)
+                    ]
                 ]
             ]
         ]
@@ -141,7 +156,7 @@ module View =
     let renderTabView state dispatch =
         match getl StateLens.tab state with
         | Tab.GUI -> renderForm state dispatch
-        | Tab.Json -> renderJsonView state
+        | Tab.Json -> renderJsonView state dispatch
 
     let render state dispatch =
         Bulma.columns [
