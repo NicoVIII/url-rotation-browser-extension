@@ -1,0 +1,216 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "Introduction",
+  "steps": [
+    {
+      "file": "manifest.json",
+      "description": "This file is the entry point and configuration file for the extension. You could call it the backbone of the extension which contains also some metadata.",
+      "line": 1
+    },
+    {
+      "file": "manifest.json",
+      "description": "Here we define the browser action which is the little icon in the browser where you can start and stop the rotation.",
+      "line": 12
+    },
+    {
+      "file": "manifest.json",
+      "description": "Here we define the part of the extension which runs in the background. This is organised as an own module, which we will visit later.",
+      "line": 16
+    },
+    {
+      "file": "manifest.json",
+      "description": "Here we define the options page. Entrypoint into the options is a simple html file.\nBut we will first visit the background module.",
+      "line": 21
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "This is the main file of the background module. This contains code without UI which will run automatically when the extension is loaded.",
+      "line": 1
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "I decided to use an Elmish like approach to handle background stuff. I'm not sure if it is a good fit, but it's an experiment to split events, state and sideeffects.\n\nIf you don't know Elmish or MVU, I will try to explain. This is the State. It's a type for everything which is persistent and should be available for further operations. In this case it is a Config (holds configured urls and other stuff) and optionally a play state which is used to hold information which are only relevant when our rotation is running.",
+      "line": 90
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "The playstate is split into two phases of the application play. First the \"creating\" phase in which everything is set up for the rotation and most values are optional.\nIf everything is ready we have the \"ready\" phase, were we always have everything we need.",
+      "line": 80
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "In the playstate we have infos about the managed tabs, which url and tab are active and the current timeout, which is used to trigger the change to the next page.\nThis is all we need.",
+      "line": 33
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "But it isn't enought to have state, we need to be able to change the state and trigger sideeffects. For this in an MVU-like structure you have Messages.\nYou can send those messages to trigger changes like \"Play\" or change state with \"SetConfig\".",
+      "line": 97
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "In this function we define the listeners in the browser to react to events. We get a dispatch function which is used to send the messages we saw.",
+      "line": 344
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "e.g. this is the listener for the browser action which plays / stops the rotation. On click it simply sends the \"SwitchPlay\" message.",
+      "line": 346
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "This is the update function which handles messages. You get the state and the send message and shall return a new state and an action (we have a look at those later).",
+      "line": 155
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "Here we handle our \"SwitchPlay\" message which is used to start / stop the rotation.",
+      "line": 229
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "As you can see we look at the current play state. Do we have one?",
+      "line": 230
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "If we don't have one, we return the current state (unchanged) and provide an action called \"SendMsg\" with the PreparePlay msg as payload. This actions does what it's name suggests and allows for chaining messages. So, if we aren't playing already, we are preparing a new play.",
+      "line": 231
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "If we already have a play state, we send the Pause msg instead.",
+      "line": 232
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "Here we handle the pause msg.",
+      "line": 210
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "Because the Pause msg can be triggered through multiple paths, we do another play check.",
+      "line": 213
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "If we are ready, we clean up our timeout and close our managed tabs.",
+      "line": 214
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "We do also set the action icon in the browser back to \"play\".",
+      "line": 225
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "And we combine those actions into one.",
+      "line": 226
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "We reset the play state in the state and return the build action (with our multiple actions inside).",
+      "line": 228
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "Actions are handled after the update in here. Actions are there to produce side effects and nothing else.\nupdate: state mutation (through immutable state in -> state out)\nprocessAction: sideeffects",
+      "line": 283
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "e.g. we have here the SendMsg action. It simply dispatches a new msg. Because actions can be promises, we have to wrap that value in a promise to satisfy the type constraints.",
+      "line": 300
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "Here is another action, which opens two tabs for provided urls.",
+      "line": 312
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "Here we open one tab, which happens in a promise. With the let! we wait for that promise to return. Have a look at the types of browser.tabs.create and tab.",
+      "line": 314
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "We also open another tab. Because this doesn't have to happen sequentially but can happen independent of each other, we use and! instead of let!.\nWith let! we would wait for the first promise to return until we start this second one.",
+      "line": 319
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "After that we convert the integer tab ids into real TabIds and send a msg which will set the tab ids in the play state.",
+      "line": 327
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "We also send a msg which sets the current tab in the play state.",
+      "line": 330
+    },
+    {
+      "file": "modules/background/Background.fs",
+      "description": "And this is all there is to know for now about the structure of the background code. Let's have a look at the options page.",
+      "line": 1
+    },
+    {
+      "file": "assets/html/options.html",
+      "description": "This is the html page which opens when you open the preferences of the extension.",
+      "line": 1
+    },
+    {
+      "file": "assets/html/options.html",
+      "description": "As you can see we include some css. This is mostly just the CSS from the brilliant bulma framework. Have a look at https://bulma.io/.",
+      "line": 7
+    },
+    {
+      "file": "assets/html/options.html",
+      "description": "Here we include our js, which we of course generate with fable from F#.",
+      "line": 11
+    },
+    {
+      "file": "assets/html/options.html",
+      "description": "And this is the place where we will mount our application. Notice the id: elmish-app.\n\nLet's jump into the F# code.",
+      "line": 13
+    },
+    {
+      "file": "modules/options/App.fs",
+      "description": "This is the main file of the options F# code. It just initialises the app.",
+      "line": 1
+    },
+    {
+      "file": "modules/options/App.fs",
+      "description": "Remember? We mount the compiled app (which in fact uses react under the hood) at the id \"elmish-app\".",
+      "line": 8
+    },
+    {
+      "file": "modules/options/Model.fs",
+      "description": "Here we use the real Elmish and therefore MVU. MVU means Model-View-Update. The state is our model, like you saw in the background module.",
+      "line": 42
+    },
+    {
+      "file": "modules/options/Model.fs",
+      "description": "This is the init function, which provides the model we start with.",
+      "line": 77
+    },
+    {
+      "file": "modules/options/Model.fs",
+      "description": "This is our update function. I called it \"perform\" here, because it is in the Update module and I liked Update.perform better than Update.update. Here we process the messages.",
+      "line": 97
+    },
+    {
+      "file": "modules/options/View.fs",
+      "description": "And now to something new:\nThe view part. Here we get the state and a dispatch function (to send messages) and return how our rendered view should look like with that state. This is a declarative approach to GUI which I think is quite nice to use.",
+      "line": 161
+    },
+    {
+      "file": "modules/options/View.fs",
+      "description": "As you can see there are bindings available for Bulma. For normal HTML we use the brilliant Feliz package and with addition of Feliz.Bulma we can much easier access components and classes from Bulma framework to create a nice UI easily.",
+      "line": 162
+    },
+    {
+      "file": "manifest.json",
+      "description": "This is all for now. Let me know if you think that this CodeTour was helpful or what I could do better.\n\nThanks for reading!",
+      "line": 1
+    }
+  ]
+}

@@ -15,7 +15,8 @@
 	"extensions": [
 		"editorconfig.editorconfig",
 		"Ionide.Ionide-fsharp",
-		"ms-dotnettools.csharp"
+		"ms-dotnettools.csharp",
+		"vsls-contrib.codetour"
 	],
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
