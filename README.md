@@ -17,6 +17,11 @@ If you change the tab or close one of the tabs managed by the application, the p
 needs to be started again. The current state of the extension is easily seen at the icon.
 It will show a play button if it is paused and a pause button if the rotation is running.
 
+## Download
+
+* [Url Rotation (Firefox Add-Ons)](https://addons.mozilla.org/de/firefox/addon/url-rotation/)
+* _Still working on Chrome Support!_
+
 ## Development
 
 This diagram can give a hint about the structure of the repository. Each filled circle is a file.
