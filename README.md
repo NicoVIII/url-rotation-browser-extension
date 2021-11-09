@@ -9,6 +9,13 @@ urls. It is made for Firefox but will be made compatible with Chrome, if its rea
 
 It is inspired by [Tab Rotate for Chrome](https://github.com/KevinSheedy/chrome-tab-rotate).
 
+## Download
+
+* [Url Rotation (Firefox Add-Ons)](https://addons.mozilla.org/de/firefox/addon/url-rotation/)
+* _Still working on Chrome Support!_
+
+## Usage
+
 To use the extnesion, first install it (either as a temporary addon or from extension store). Then open the
 preferences of the extension and configure it like you need it. After that you can click
 on the icon in the extension bar and start presenting the configured urls.
@@ -16,11 +23,6 @@ on the icon in the extension bar and start presenting the configured urls.
 If you change the tab or close one of the tabs managed by the application, the playback will stop and
 needs to be started again. The current state of the extension is easily seen at the icon.
 It will show a play button if it is paused and a pause button if the rotation is running.
-
-## Download
-
-* [Url Rotation (Firefox Add-Ons)](https://addons.mozilla.org/de/firefox/addon/url-rotation/)
-* _Still working on Chrome Support!_
 
 ## Development
 
