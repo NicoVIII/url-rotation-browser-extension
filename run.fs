@@ -102,10 +102,10 @@ module Task =
         // Register watchers
         let mode = Debug
 
-        use sassWatcher =
+        use _ =
             setupWatcher [ "sass/" ] (fun () -> buildSass Debug)
 
-        use moduleWatcher =
+        use _ =
             Directory.EnumerateFiles("modules", "*.fsproj", SearchOption.AllDirectories)
             |> Seq.toList
             |> List.map (fun modul ->
