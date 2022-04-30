@@ -6,17 +6,17 @@ open Fake.IO
 
 open RunHelpers
 open RunHelpers.BasicShortcuts
-open RunHelpers.FakeHelpers
+open RunHelpers.Templates
 open RunHelpers.Watch
 
 module Process =
     let create cmd args = CreateProcess.fromRawCommand cmd args
-    let runAsJob = Proc.runAsJob Constant.errorExitCode
 
 [<AutoOpen>]
 module Shortcuts =
     let sass args =
-        Process.create "sass" args |> Process.runAsJob
+        Process.create "sass" args
+        |> Job.fromCreateProcess
 
 type BuildMode =
     | Debug
@@ -28,11 +28,11 @@ module Task =
             Directory.EnumerateFiles("modules", "*.fsproj", SearchOption.AllDirectories)
 
         job {
-            Template.DotNet.toolRestore ()
-            Template.Pnpm.install ()
+            DotNet.toolRestore ()
+            Pnpm.install ()
 
             for modul in modules do
-                Template.DotNet.restore modul
+                DotNet.restore modul
         }
 
     let femto () =
@@ -90,7 +90,7 @@ module Task =
                   "-c"
                   $"%s{folder}/webpack.config.js" ]
             |> CreateProcess.withWorkingDirectory folder
-            |> Process.runAsJob
+            |> Job.fromCreateProcess
         }
 
     let watch () =
@@ -102,8 +102,7 @@ module Task =
         // Register watchers
         let mode = Debug
 
-        use _ =
-            setupWatcher [ "sass/" ] (fun () -> buildSass Debug)
+        use _ = setupWatcher [ "sass/" ] (fun () -> buildSass Debug)
 
         use _ =
             Directory.EnumerateFiles("modules", "*.fsproj", SearchOption.AllDirectories)
@@ -114,7 +113,7 @@ module Task =
 
         printfn "Waiting for changes... (enter to exit)"
         Console.ReadLine() |> ignore
-        Ok
+        Job.ok
 
     let build mode =
         let modules =
@@ -169,50 +168,35 @@ module Task =
             ]
         }
 
-module Command =
-    let restore () = Task.restore ()
-
-    let subbuild () = Task.build Debug
-
-    let subwatch () = Task.watch ()
-
-    let watch () =
-        job {
-            restore ()
-            Task.femto ()
-            subbuild ()
-            subwatch ()
-        }
-
-    let build () =
-        job {
-            restore ()
-            Task.femto ()
-            subbuild ()
-        }
-
-    let pack () =
-        job {
-            restore ()
-            Task.femto ()
-            Task.build Release
-            Task.pack ()
-        }
-
 [<EntryPoint>]
 let main args =
     args
     |> List.ofArray
     |> function
-        | [ "restore" ] -> Command.restore ()
-        | [ "subbuild" ] -> Command.subbuild ()
+        | [ "restore" ] -> Task.restore ()
+        | [ "subbuild" ] -> Task.build Debug
         | []
-        | [ "build" ] -> Command.build ()
-        | [ "subwatch" ] -> Command.subwatch ()
-        | [ "watch" ] -> Command.watch ()
+        | [ "build" ] ->
+            job {
+                Task.restore ()
+                Task.femto ()
+                Task.build Debug
+            }
+        | [ "subwatch" ] -> Task.watch ()
+        | [ "watch" ] ->
+            job {
+                Task.restore ()
+                Task.femto ()
+                Task.build Debug
+                Task.watch ()
+            }
         | [ "bundle" ]
-        | [ "pack" ] -> Command.pack ()
-        | _ ->
-            let msg = [ "Invalid input" ]
-            Error(1, msg)
-    |> ProcessResult.wrapUp
+        | [ "pack" ] ->
+            job {
+                Task.restore ()
+                Task.femto ()
+                Task.build Release
+                Task.pack ()
+            }
+        | _ -> Job.error [ "Invalid input" ]
+    |> Job.execute

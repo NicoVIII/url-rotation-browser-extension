@@ -16,7 +16,7 @@ It is inspired by [Tab Rotate for Chrome](https://github.com/KevinSheedy/chrome-
 
 ## Usage
 
-To use the extnesion, first install it (either as a temporary addon or from extension store). Then open the
+To use the extension, first install it (either as a temporary addon or from extension store). Then open the
 preferences of the extension and configure it like you need it. After that you can click
 on the icon in the extension bar and start presenting the configured urls.
 
@@ -45,13 +45,13 @@ which is part of the repo. The CodeTour extension is already installed inside of
 the devcontainer.
 To take the tour run the "CodeTour: Start Tour" command. The tour will try to explain
 the structure of the code to you. Please consider giving feedback on this, because it
-is one of the first times I tried something like that or even provide PRs with improvements <3
+is one of the first times I tried something like that, or even provide PRs with improvements <3
 
 ### Work with the code
 When you want to start working with the code, you can build this project and enter
 watch mode with `dotnet run watch`.
-After that you can open `about:debugging` in Firefox and add the manifest.json as a temporary extension
-for testing. You should consider reloading the extension and maybe option page to
+After that you can open `about:debugging` in Firefox and add the manifest.json in the root of the project
+as a temporary extension for testing. You should consider reloading the extension and maybe option page to
 see your changes and use the "Inspect" for the extension to see output from the background script.
 
 ### Commands
