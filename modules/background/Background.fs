@@ -1,138 +1,11 @@
 namespace UrlRotation
 
-open System
-open System.Collections.Generic
-
 open Fable.Core
 open Fable.Core.JsInterop
 
 open UrlRotation.BrowserBindings
-
-[<RequireQualifiedAccess>]
-type Icon =
-    | Play
-    | Pause
-
-module Icon =
-    let getPath =
-        function
-        | Icon.Play -> "assets/icons/play-32.png"
-        | Icon.Pause -> "assets/icons/pause-32.png"
-
-// Measures for Domainmodelling
-[<Measure>]
-type tabId
-
-type TabId = int<tabId>
-
-[<RequireQualifiedAccess>]
-module TabId =
-    let inline create (value: int) = value * 1<tabId>
-    let inline toInt (tabId: TabId) = int tabId
-
-type PlayState =
-    { page: int
-      currentTab: TabId
-      tabs: TabId list
-      timeout: int }
-
-module PlayState =
-    let getNextTab play =
-        play.tabs
-        |> List.findIndex ((=) play.currentTab)
-        |> (fun i -> (i + 1) % List.length play.tabs)
-        |> (fun i -> List.item i play.tabs)
-
-    let getNextPage page urlAmount = (page + 1) % urlAmount
-
-    let getNextUrl page urls =
-        List.item (getNextPage page (List.length urls)) urls
-
-    let setPage value state = { state with page = value }
-
-/// Used while data is collected
-type PartialPlayState =
-    { page: int
-      currentTab: TabId option
-      tabs: TabId list
-      timeout: int option }
-
-module PartialPlayState =
-    let create page =
-        { page = page
-          currentTab = None
-          tabs = []
-          timeout = None }
-
-    let inline toPlayState (partial: PartialPlayState) =
-        match partial with
-        | { currentTab = Some currentTab
-            tabs = (_ :: _ :: _) as tabs
-            timeout = Some timeout } as partial ->
-
-            { PlayState.page = partial.page
-              currentTab = currentTab
-              tabs = tabs
-              timeout = timeout }
-            |> Some
-        | _ -> None
-
-type CurrentPlayState =
-    | Creating of PartialPlayState
-    | Ready of PlayState
-
-module CurrentPlayState =
-    let createFromPartial play =
-        match PartialPlayState.toPlayState play with
-        | Some play -> Ready play
-        | None -> Creating play
-
-type State =
-    { config: Config
-      play: CurrentPlayState option }
-
-module State =
-    let create config = { config = config; play = None }
-
-type Msg =
-    | SetTabs of TabId list
-    | SetTimeout of int
-    | SetCurrentTab of TabId
-    | SetConfig of Config
-    | PreparePlay
-    | Play
-    | Pause
-    | SwitchPlay
-    | NextPage
-    | OnTabActivate of TabId
-    | OnTabRemove of TabId
-
-type Action =
-    | NoAction
-    | Actions of Action list
-    | SetActionIcon of Icon
-    | SendMsg of Msg
-    | CloseTabs of TabId list
-    | SetTimeout of Msg * int<s>
-    | ClearTimeout of int
-    | ActivateNextTab of TabId * TabId * string
-    | OpenTabs of string list
-    | LoadConfig of Msg
-
-module Action =
-    let combine a1 a2 =
-        match a1, a2 with
-        | Actions a1, Actions a2 -> [ a1; a2 ] |> List.concat
-        | Actions actionList, action
-        | action, Actions actionList -> [ yield! actionList; action ]
-        | action1, action2 -> [ action1; action2 ]
-        |> Actions
-
-    let inline concat actions =
-        match actions with
-        | [] -> NoAction
-        | [ action ] -> action
-        | actions -> List.reduce combine actions
+open UrlRotation.BrowserBindings.Internal
+open UrlRotation.JsWrapper
 
 /// Some helpers for Promise handling
 module Promise =
@@ -140,9 +13,6 @@ module Promise =
 
 [<AutoOpen>]
 module Functions =
-    let setTimeout dispatch (time: int<s>) msg =
-        JS.setTimeout (fun () -> dispatch msg) ((int time) * 1000)
-
     let loadConfig () =
         Storage.loadConfig ()
         |> (fun config ->
@@ -151,235 +21,156 @@ module Functions =
                     config.urls
                     |> List.map (fun url -> "https://" + url) })
 
+// Here starts the mutable code
 module App =
-    let update msg state =
-        match msg with
-        | SetTabs tabs ->
-            let play =
-                match state.play with
-                | Some (Ready play) -> { play with tabs = tabs } |> Ready |> Some
-                | Some (Creating play) ->
-                    { play with tabs = tabs }
-                    |> CurrentPlayState.createFromPartial
-                    |> Some
-                | None -> None
+    let mutable private state = loadConfig () |> State.create
 
-            { state with play = play }, NoAction
-        | Msg.SetTimeout timeout ->
-            let play =
-                match state.play with
-                | Some (Ready play) -> { play with timeout = timeout } |> Ready |> Some
-                | Some (Creating play) ->
-                    { play with timeout = Some timeout }
-                    |> CurrentPlayState.createFromPartial
-                    |> Some
-                | None -> None
+    // Shortcut for writing the state so we can hook into that and print debug messages
+    let inline setState newState =
+#if DEBUG
+        printfn "new state: %A" newState
+#endif
+        state <- newState
 
-            { state with play = play }, NoAction
-        | SetCurrentTab tabId ->
-            let play =
-                match state.play with
-                | Some (Ready play) -> { play with currentTab = tabId } |> Ready |> Some
-                | Some (Creating play) ->
-                    { play with currentTab = Some tabId }
-                    |> CurrentPlayState.createFromPartial
-                    |> Some
-                | None -> None
+    let setActionIcon icon =
+        browser.browserAction.setIcon (!!{| path = Icon.getPath icon |})
 
-            { state with play = play }, NoAction
-        | SetConfig config -> { state with config = config }, NoAction
-        | PreparePlay ->
-            let state =
-                { state with play = PartialPlayState.create 0 |> Creating |> Some }
+    let loadConfig () =
+        setState { state with config = loadConfig () }
 
-            let action =
-                [ SetActionIcon Icon.Pause
-                  LoadConfig(Play) ]
-                |> Action.concat
+    let closeTabs tabIds =
+        tabIds
+        |> List.map TabId.toInt
+        |> ResizeArray
+        |> browser.tabs.remove
 
-            state, action
-        | Play ->
-            let action =
-                [ [ 0; 1 ]
-                  |> List.map (fun i -> List.item i state.config.urls)
-                  |> OpenTabs
-                  SetTimeout(NextPage, state.config.timePerUrl) ]
-                |> Action.concat
+    let setCurrentTab tabId =
+        Option.iter
+            (fun play ->
+                let play = { play with currentTab = tabId }
+                setState { state with play = Some play })
+            state.play
 
-            state, action
-        | Pause ->
-            let action =
-                // We have to do most stuff only, when we are playing
-                match state.play with
-                | Some (Ready play) ->
-                    [ ClearTimeout play.timeout
-                      CloseTabs play.tabs ]
-                | Some (Creating play) ->
-                    [ match play.timeout with
-                      | Some timeout -> ClearTimeout timeout
-                      | None -> ()
-                      match play.tabs with
-                      | [] -> ()
-                      | tabs -> CloseTabs tabs ]
-                | None -> [ NoAction ]
-                |> List.append [ SetActionIcon Icon.Play ]
-                |> Action.concat
+    let setConfig config = setState { state with config = config }
 
-            { state with play = None }, action
-        | SwitchPlay ->
+    let openTabs urls =
+        promise {
+            let! tab =
+                !!{| active = true
+                     url = List.item 0 urls |}
+                |> browser.tabs.create
+
+            and! tab2 =
+                !!{| active = false
+                     url = List.item 1 urls |}
+                |> browser.tabs.create
+
+            let tabId1 = TabId.create tab.id.Value
+            let tabId2 = TabId.create tab2.id.Value
+
+            return (tabId1, tabId2)
+        }
+
+    let nextPage () =
+        promise {
             match state.play with
-            | None -> state, SendMsg PreparePlay
-            | Some _ -> state, SendMsg Pause
-        | NextPage ->
-            let play, action =
-                match state.play with
-                | Some (Ready play) ->
-                    let currentTab = play.currentTab
+            | Some play ->
+                let currentTab = play.currentTab
+                let nextPage = PlayState.getNextPage play.page (List.length state.config.urls)
+                let nextTab = PlayState.getNextTab play
+                let nextNextUrl = PlayState.getNextUrl nextPage state.config.urls
 
-                    let nextPage =
-                        PlayState.getNextPage play.page (List.length state.config.urls)
+                // Switch to other tab
+                let! _ = browser.tabs.update (nextTab |> TabId.toInt |> Some) !!{| active = true |}
+                // Preload page in inactive tab
+                let! _ = browser.tabs.update (currentTab |> TabId.toInt |> Some) !!{| url = nextNextUrl |}
 
-                    let nextTab = PlayState.getNextTab play
-
-                    let nextNextUrl =
-                        PlayState.getNextUrl nextPage state.config.urls
-
-                    let play =
-                        { play with
-                            currentTab = nextTab
-                            page = nextPage }
-                        |> Ready
-                        |> Some
-
-                    let action =
-                        [ SetTimeout(NextPage, state.config.timePerUrl)
-                          (currentTab, nextTab, nextNextUrl)
-                          |> ActivateNextTab ]
-                        |> Action.concat
-
-                    play, action
-                | Some (Creating _)
-                | None -> None, NoAction
-
-            { state with play = play }, action
-        | OnTabActivate id ->
-            match state.play with
-            | Some (Ready { tabs = tabs })
-            | Some (Creating { tabs = tabs }) when List.contains id tabs -> state, NoAction
-            | Some (Creating _)
-            | None -> state, NoAction
-            | Some (Ready _) -> state, SendMsg Pause
-        | OnTabRemove id ->
-            match state.play with
-            | Some (Ready play) when List.contains id play.tabs ->
                 let play =
-                    { play with tabs = play.tabs |> List.filter (fun tab -> tab <> id) }
-                    |> Ready
+                    { play with
+                        currentTab = nextTab
+                        page = nextPage }
 
-                { state with play = Some play }, SendMsg Pause
-            | Some _
-            | None -> state, NoAction
+                setState { state with play = Some play }
+            | None -> ()
+        }
 
-    let rec processAction dispatch action =
+    let play () =
+        promise {
+            setActionIcon Icon.Pause
+            loadConfig ()
+
+            let tabs =
+                [ 0; 1 ]
+                |> List.map (fun i -> List.item i state.config.urls)
+
+            let! (tabId1, tabId2) = openTabs tabs
+
+            let timeoutId = Timeout.set (nextPage >> Promise.ignore) state.config.timePerUrl
+
+            let play =
+                { page = 0
+                  currentTab = tabId1
+                  tabs = [ tabId1; tabId2 ]
+                  timeout = timeoutId }
+
+            setState { state with play = Some play }
+        }
+
+    let pause () =
+        promise {
+            // We have to do most stuff only, when we are playing
+            match state.play with
+            | Some play ->
+                Timeout.clear play.timeout
+                do! closeTabs play.tabs
+            | None -> ()
+
+            setState { state with play = None }
+            setActionIcon Icon.Play
+        }
+
+    let switchPlay () =
+        promise {
+            match state.play with
+            | None -> do! play ()
+            | Some _ -> do! pause ()
+        }
+
+    let onBrowserAction (_: BrowserEvent) = switchPlay () |> Promise.ignore
+
+    let onTabActivate (info: ActiveInfo) =
+        let tabId = info.tabId |> TabId.create
 #if DEBUG
-        match action with
-        | NoAction
-        | Actions _ -> ()
-        | action -> printfn "Triggered action: %A" action
+        printfn "Event - tab activate"
 #endif
-        match action with
-        | NoAction -> () |> Promise.wrapValue
-        | SetActionIcon icon ->
-            browser.browserAction.setIcon (!!{| path = Icon.getPath icon |})
-            |> Promise.wrapValue
-        | Actions actions ->
-            promise {
-                for action in actions do
-                    do! processAction dispatch action
-            }
-        | SendMsg msg -> dispatch msg |> Promise.wrapValue
-        | CloseTabs tabIds ->
-            tabIds
-            |> List.map TabId.toInt
-            |> ResizeArray
-            |> browser.tabs.remove
-        | SetTimeout (msg, time) ->
-            setTimeout dispatch time msg
-            |> Msg.SetTimeout
-            |> dispatch
-            |> Promise.wrapValue
-        | ClearTimeout timeoutId -> JS.clearTimeout timeoutId |> Promise.wrapValue
-        | OpenTabs urls ->
-            promise {
-                let! tab =
-                    !!{| active = true
-                         url = List.item 0 urls |}
-                    |> browser.tabs.create
+        match state.play with
+        | Some play when not (List.contains tabId play.tabs) -> pause () |> Promise.ignore
+        | _ -> ()
 
-                and! tab2 =
-                    !!{| active = false
-                         url = List.item 1 urls |}
-                    |> browser.tabs.create
+    let onTabRemove id _ =
+#if DEBUG
+        printfn "Event - tab remove: %i" id
+#endif
+        let id = TabId.create id
 
-                [ tab.id.Value; tab2.id.Value ]
-                |> List.map TabId.create
-                |> SetTabs
-                |> dispatch
+        match state.play with
+        | Some play when List.contains id play.tabs ->
+            let play = { play with tabs = play.tabs |> List.filter (fun tab -> tab <> id) }
+            setState { state with play = Some play }
+            pause () |> Promise.ignore
+        | Some _
+        | None -> ()
 
-                SetCurrentTab(TabId.create tab.id.Value)
-                |> dispatch
-            }
-        | ActivateNextTab (currentTabId, nextTabId, nextNextUrl) ->
-            promise {
-                let! _ = browser.tabs.update (nextTabId |> TabId.toInt |> Some) !!{| active = true |}
-                let! _ = browser.tabs.update (currentTabId |> TabId.toInt |> Some) !!{| url = nextNextUrl |}
-                dispatch (SetCurrentTab nextTabId)
-            }
-        | LoadConfig msg ->
-            promise {
-                loadConfig () |> SetConfig |> dispatch
-                dispatch msg
-            }
-
-    let registerListeners dispatch =
+module Startup =
+    let registerListeners () =
         // Start / Stop from browser action
-        browser.browserAction.onClicked.addListener (fun _ -> dispatch SwitchPlay)
+        browser.browserAction.onClicked.addListener App.onBrowserAction
         // We stop, when one of the two tabs is closed
-        browser.tabs.onRemoved.addListener (fun id _ -> id |> TabId.create |> OnTabRemove |> dispatch)
+        browser.tabs.onRemoved.addListener App.onTabRemove
         // We stop, when the tab is changed
-        browser.tabs.onActivated.addListener (fun info ->
-            info.tabId
-            |> TabId.create
-            |> OnTabActivate
-            |> dispatch)
+        browser.tabs.onActivated.addListener App.onTabActivate
 
-    // Start of script
-    let mutable running = false
-    let mutable state = loadConfig () |> State.create
-    let queue = new Queue<Msg>()
-
-    let rec dispatch msg : unit =
-#if DEBUG
-        printfn "Send msg: %A" msg
-#endif
-
-        let rec processMsg msg =
-            let state', action = update msg state
-            state <- state'
-            let promise = processAction dispatch action
-
-            promise.``then`` (fun () ->
-                if queue.Count > 0 then
-                    queue.Dequeue() |> processMsg
-                else
-                    ())
-            |> ignore
-
-        if running then
-            queue.Enqueue msg
-        else
-            running <- true
-            processMsg msg
-            running <- false
-
-    registerListeners dispatch
+    [<EntryPoint>]
+    let run _ =
+        registerListeners ()
+        0

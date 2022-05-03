@@ -19,7 +19,6 @@
 		"editorconfig.editorconfig",
 		"Ionide.Ionide-fsharp",
 		"ms-dotnettools.csharp",
-		"vsls-contrib.codetour",
 		"github.copilot"
 	],
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.

@@ -40,13 +40,6 @@ After you open the cloned repo in VScode you can enter the devcontainer with the
 "Remote Containers: Rebuild and Reopen in Container" command from the command palette
 (if you don't know how to open it: View > Command Palette...).
 
-To get a first look at the structure of the code, you can take the CodeTour "introduction"
-which is part of the repo. The CodeTour extension is already installed inside of
-the devcontainer.
-To take the tour run the "CodeTour: Start Tour" command. The tour will try to explain
-the structure of the code to you. Please consider giving feedback on this, because it
-is one of the first times I tried something like that, or even provide PRs with improvements <3
-
 ### Work with the code
 When you want to start working with the code, you can build this project and enter
 watch mode with `dotnet run watch`.

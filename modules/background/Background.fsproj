@@ -4,6 +4,9 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Icon.fs" />
+    <Compile Include="JsWrapper.fs" />
+    <Compile Include="Model.fs" />
     <Compile Include="Background.fs" />
   </ItemGroup>
   <ItemGroup>
