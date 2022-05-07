@@ -25,10 +25,15 @@ module Functions =
 module App =
     let mutable private state = loadConfig () |> State.create
 
+    /// Tracks if the tab activation is triggered by us
+    let mutable private automaticSwitch = false
+    let mutable private onTabActivate = fun _ -> failwith "Not initialized"
+    let mutable private onTabRemove = fun _ -> failwith "Not initialized"
+
     // Shortcut for writing the state so we can hook into that and print debug messages
     let inline setState newState =
 #if DEBUG
-        printfn "new state: %A" newState
+        printfn "New state: %A" newState
 #endif
         state <- newState
 
@@ -72,6 +77,9 @@ module App =
         }
 
     let nextPage () =
+#if DEBUG
+        printfn "Next page"
+#endif
         promise {
             match state.play with
             | Some play ->
@@ -80,10 +88,12 @@ module App =
                 let nextTab = PlayState.getNextTab play
                 let nextNextUrl = PlayState.getNextUrl nextPage state.config.urls
 
+                automaticSwitch <- true
                 // Switch to other tab
                 let! _ = browser.tabs.update (nextTab |> TabId.toInt |> Some) !!{| active = true |}
                 // Preload page in inactive tab
                 let! _ = browser.tabs.update (currentTab |> TabId.toInt |> Some) !!{| url = nextNextUrl |}
+                automaticSwitch <- false
 
                 let play =
                     { play with
@@ -95,7 +105,13 @@ module App =
         }
 
     let play () =
+#if DEBUG
+        printfn "Trigger play"
+#endif
         promise {
+            // We stop, when one of the two tabs is closed
+            browser.tabs.onRemoved.addListener onTabRemove
+
             setActionIcon Icon.Pause
             loadConfig ()
 
@@ -105,23 +121,33 @@ module App =
 
             let! (tabId1, tabId2) = openTabs tabs
 
-            let timeoutId = Timeout.set (nextPage >> Promise.ignore) state.config.timePerUrl
+            // We stop, when the tab is changed
+            browser.tabs.onActivated.addListener onTabActivate
+
+            let intervalId = Interval.set (nextPage >> Promise.ignore) state.config.timePerUrl
 
             let play =
                 { page = 0
                   currentTab = tabId1
                   tabs = [ tabId1; tabId2 ]
-                  timeout = timeoutId }
+                  intervalId = intervalId }
 
             setState { state with play = Some play }
         }
 
     let pause () =
+#if DEBUG
+        printfn "Trigger pause"
+#endif
         promise {
             // We have to do most stuff only, when we are playing
             match state.play with
             | Some play ->
-                Timeout.clear play.timeout
+                // We remove the listeners again
+                browser.tabs.onRemoved.removeListener onTabRemove
+                browser.tabs.onActivated.removeListener onTabActivate
+
+                Interval.clear play.intervalId
                 do! closeTabs play.tabs
             | None -> ()
 
@@ -138,37 +164,41 @@ module App =
 
     let onBrowserAction (_: BrowserEvent) = switchPlay () |> Promise.ignore
 
-    let onTabActivate (info: ActiveInfo) =
-        let tabId = info.tabId |> TabId.create
+    onTabActivate <-
+        fun (info: ActiveInfo) ->
 #if DEBUG
-        printfn "Event - tab activate"
+            printfn "Event - tab activate"
 #endif
-        match state.play with
-        | Some play when not (List.contains tabId play.tabs) -> pause () |> Promise.ignore
-        | _ -> ()
+            let tabId = info.tabId |> TabId.create
 
-    let onTabRemove id _ =
+            match state.play, automaticSwitch with
+            | Some play, true when not (List.contains tabId play.tabs) ->
+                // Some tab, which is not one of ours was activated, we pause
+                pause () |> Promise.ignore
+            | Some _, false ->
+                // Some tab was activated, but it wasn't us -> we pause
+                pause () |> Promise.ignore
+            | _ -> ()
+
+    onTabRemove <-
+        fun (id, _) ->
 #if DEBUG
-        printfn "Event - tab remove: %i" id
+            printfn "Event - tab remove: %i" id
 #endif
-        let id = TabId.create id
+            let id = TabId.create id
 
-        match state.play with
-        | Some play when List.contains id play.tabs ->
-            let play = { play with tabs = play.tabs |> List.filter (fun tab -> tab <> id) }
-            setState { state with play = Some play }
-            pause () |> Promise.ignore
-        | Some _
-        | None -> ()
+            match state.play with
+            | Some play when List.contains id play.tabs ->
+                let play = { play with tabs = play.tabs |> List.filter (fun tab -> tab <> id) }
+                setState { state with play = Some play }
+
+                pause () |> Promise.ignore
+            | _ -> ()
 
 module Startup =
     let registerListeners () =
         // Start / Stop from browser action
         browser.browserAction.onClicked.addListener App.onBrowserAction
-        // We stop, when one of the two tabs is closed
-        browser.tabs.onRemoved.addListener App.onTabRemove
-        // We stop, when the tab is changed
-        browser.tabs.onActivated.addListener App.onTabActivate
 
     [<EntryPoint>]
     let run _ =

@@ -17,7 +17,7 @@ type PlayState =
     { page: int
       currentTab: TabId
       tabs: TabId list
-      timeout: Timeout.Id }
+      intervalId: Interval.Id }
 
 module PlayState =
     let getNextTab play =

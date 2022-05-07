@@ -4,6 +4,22 @@ namespace UrlRotation
 module JsWrapper =
     open Fable.Core
 
+    module Interval =
+        [<Measure>]
+        type private id
+
+        type Id = int<id>
+
+        module Id =
+            let create id : Id = id * 1<id>
+            let unwrap (id: Id) = id / 1<id>
+
+        let set callback (time: int<s>) =
+            JS.setInterval callback (1000 * int time)
+            |> Id.create
+
+        let clear timeoutId = JS.clearInterval (Id.unwrap timeoutId)
+
     module Promise =
         let ignore (promise: JS.Promise<'a>) = promise |> ignore
 
