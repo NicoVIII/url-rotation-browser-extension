@@ -2,12 +2,13 @@ namespace UrlRotation
 
 open Feliz
 open Feliz.Bulma
+open SimpleOptics
 
 [<RequireQualifiedAccess>]
 module View =
     let renderTab state dispatch tab text =
         Bulma.tab [
-            if (getl StateLens.tab state) = tab then
+            if (Optic.get StateLens.tab state) = tab then
                 Bulma.tab.isActive
             prop.children [
                 Html.a [
@@ -89,8 +90,7 @@ module View =
     let renderForm state dispatch =
         // We always want one empty field for new urls
         let urls =
-            state
-            |> getl StateLens.urls
+            Optic.get StateLens.urls state
             // We don't save empty urls
             |> Map.toList
             |> List.sortBy fst
@@ -105,14 +105,14 @@ module View =
                 Save |> dispatch)
             prop.children [
                 Bulma.subtitle "General"
-                renderTimeInput (getl StateLens.timePerUrl state) dispatch
+                renderTimeInput (Optic.get StateLens.timePerUrl state) dispatch
 
                 Bulma.subtitle "Urls"
                 for (i, url) in urls do
                     renderUrlInput i url dispatch
 
                 Bulma.button.button [
-                    if getl StateLens.saved state then
+                    if Optic.get StateLens.saved state then
                         color.isSuccess
                         prop.text "Saved"
                     else
@@ -123,7 +123,7 @@ module View =
         ]
 
     let renderJsonView state dispatch =
-        let json = getl StateLens.json state
+        let json = Optic.get StateLens.json state
         let rows = json.Split '\n' |> Array.length
 
         Html.div [
@@ -154,7 +154,7 @@ module View =
         ]
 
     let renderTabView state dispatch =
-        match getl StateLens.tab state with
+        match Optic.get StateLens.tab state with
         | Tab.GUI -> renderForm state dispatch
         | Tab.Json -> renderJsonView state dispatch
 

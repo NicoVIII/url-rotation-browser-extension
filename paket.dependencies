@@ -1,5 +1,6 @@
 source https://www.nuget.org/api/v2
 
+framework: auto-detect
 storage: none
 
 nuget FSharp.Core
@@ -11,4 +12,5 @@ nuget Fable.Elmish.React
 nuget Fable.Promise
 nuget Feliz
 nuget Feliz.Bulma
+nuget NicoVIII.SimpleOptics
 nuget Thoth.Json

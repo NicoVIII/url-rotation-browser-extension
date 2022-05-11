@@ -1,5 +1,7 @@
 namespace UrlRotation
 
+open SimpleOptics
+
 [<RequireQualifiedAccess>]
 type Tab =
     | GUI
@@ -62,8 +64,8 @@ module StateLens =
     let tab =
         Lens((fun state -> state.tab), (fun state tab -> { state with tab = tab }))
 
-    let urls = config << WipConfigLens.urls
-    let timePerUrl = config << WipConfigLens.timePerUrl
+    let urls = Optic.compose config WipConfigLens.urls
+    let timePerUrl = Optic.compose config WipConfigLens.timePerUrl
 
 type Msg =
     | ChangeUrl of key: int * value: string
@@ -75,8 +77,7 @@ type Msg =
 [<RequireQualifiedAccess>]
 module Model =
     let init () =
-        let wipConfig =
-            Storage.loadConfig () |> WipConfig.fromConfig
+        let wipConfig = Storage.loadConfig () |> WipConfig.fromConfig
 
         { config = wipConfig
           saved = false
@@ -96,29 +97,25 @@ module Update =
 
     let perform msg state =
         match msg with
-        | ChangeUrl (key, value) ->
-            state.config.urls
-            |> Map.add key value
-            |> setlr StateLens.urls state
-        | ChangeTime time -> setl StateLens.timePerUrl time state
+        | ChangeUrl (key, value) -> Optic.map StateLens.urls (Map.add key value) state
+        | ChangeTime time -> Optic.set StateLens.timePerUrl time state
         | SetTab tab ->
             let config = state.config |> WipConfig.toConfig
 
             state
             // Refresh json
-            |> setl StateLens.json (toJson 2 config)
-            |> setl StateLens.jsonInvalid false
-            |> setl StateLens.tab tab
+            |> Optic.set StateLens.json (toJson 2 config)
+            |> Optic.set StateLens.jsonInvalid false
+            |> Optic.set StateLens.tab tab
         | SetJson json ->
             fromJson<Config> json
             |> function
                 | Ok config ->
                     // The json is valid, we can use it to fill the other settings
-                    config
-                    |> WipConfig.fromConfig
-                    |> setlr StateLens.config state
-                    |> setl StateLens.jsonInvalid false
-                | Error _ -> state |> setl StateLens.jsonInvalid true
+                    state
+                    |> Optic.set StateLens.config (WipConfig.fromConfig config)
+                    |> Optic.set StateLens.jsonInvalid false
+                | Error _ -> Optic.set StateLens.jsonInvalid true state
         | Save ->
             WipConfig.toConfig state.config
             |> Storage.saveConfig
