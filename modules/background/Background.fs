@@ -1,6 +1,5 @@
 namespace UrlRotation
 
-open Fable.Core
 open Fable.Core.JsInterop
 
 open UrlRotation.BrowserBindings
@@ -44,10 +43,16 @@ module App =
         setState { state with config = loadConfig () }
 
     let closeTabs tabIds =
-        tabIds
-        |> List.map TabId.toInt
-        |> ResizeArray
-        |> browser.tabs.remove
+        promise {
+            try
+                do!
+                    tabIds
+                    |> List.map TabId.toInt
+                    |> ResizeArray
+                    |> browser.tabs.remove
+            with
+            | x -> printfn "%A" x
+        }
 
     let setCurrentTab tabId =
         Option.iter
@@ -181,7 +186,7 @@ module App =
             | _ -> ()
 
     onTabRemove <-
-        fun (id, _) ->
+        fun id _ ->
 #if DEBUG
             printfn "Event - tab remove: %i" id
 #endif

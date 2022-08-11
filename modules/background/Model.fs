@@ -10,8 +10,15 @@ type TabId = int<tabId>
 
 [<RequireQualifiedAccess>]
 module TabId =
-    let inline create value : TabId = value * 1<tabId>
     let inline toInt (tabId: TabId) = int tabId
+
+    let inline tryCreate value : TabId option =
+        if value > 0 then
+            value * 1<tabId> |> Some
+        else
+            None
+
+    let inline create value : TabId = tryCreate value |> Option.get
 
 type PlayState =
     { page: int

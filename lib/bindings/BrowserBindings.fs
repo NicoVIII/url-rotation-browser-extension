@@ -34,8 +34,8 @@ module BrowserBindings =
             abstract removeListener: (ActiveInfo -> unit) -> unit
 
         type TabsRemoveEvent =
-            abstract addListener: (int * RemoveInfo -> unit) -> unit
-            abstract removeListener: (int * RemoveInfo -> unit) -> unit
+            abstract addListener: (int -> RemoveInfo -> unit) -> unit
+            abstract removeListener: (int -> RemoveInfo -> unit) -> unit
 
         module Tabs =
             [<StringEnum>]
