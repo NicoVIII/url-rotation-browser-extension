@@ -113,5 +113,12 @@ module BrowserBindings =
             abstract runtime: Runtime
             abstract tabs: Tabs.T
 
+#if CHROME
+    [<Global>]
+    let chrome: Internal.Browser = jsNative
+
+    let browser = chrome
+#else
     [<Global>]
     let browser: Internal.Browser = jsNative
+#endif

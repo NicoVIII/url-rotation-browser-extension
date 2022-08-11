@@ -22,6 +22,10 @@ type BuildMode =
     | Debug
     | Release
 
+type TargetBrowser =
+    | FireFox
+    | Chrome
+
 module Task =
     let restore () =
         let modules =
@@ -58,7 +62,7 @@ module Task =
             $"sass/:{path}"
         ]
 
-    let buildModule mode modul =
+    let buildModule mode targetBrowser modul =
         job {
             let folder = Path.GetDirectoryName(modul: string)
 
@@ -75,6 +79,9 @@ module Task =
                 if mode = Debug then
                     "--define"
                     "DEBUG"
+                if targetBrowser = Chrome then
+                    "--define"
+                    "CHROME"
                 "-o"
                 $"%s{fableTarget}"
             ]
@@ -108,14 +115,14 @@ module Task =
             Directory.EnumerateFiles("modules", "*.fsproj", SearchOption.AllDirectories)
             |> Seq.toList
             |> List.map (fun modul ->
-                setupWatcher [ "lib/"; Path.GetDirectoryName modul ] (fun () -> buildModule mode modul))
+                setupWatcher [ "lib/"; Path.GetDirectoryName modul ] (fun () -> buildModule mode FireFox modul))
             |> FileSystemWatcherList.combine
 
         printfn "Waiting for changes... (enter to exit)"
         Console.ReadLine() |> ignore
         Job.ok
 
-    let build mode =
+    let build mode targetBrowser =
         let modules =
             Directory.EnumerateFiles("modules", "*.fsproj", SearchOption.AllDirectories)
 
@@ -123,7 +130,7 @@ module Task =
             buildSass mode
 
             for modul in modules do
-                buildModule mode modul
+                buildModule mode targetBrowser modul
         }
 
     let pack () =
@@ -174,20 +181,29 @@ let main args =
     |> List.ofArray
     |> function
         | [ "restore" ] -> Task.restore ()
-        | [ "subbuild" ] -> Task.build Debug
+        | [ "subbuild" ]
+        | [ "subbuild-firefox " ] -> Task.build Debug FireFox
+        | [ "subbuild-chrome" ] -> Task.build Debug Chrome
         | []
-        | [ "build" ] ->
+        | [ "build" ]
+        | [ "build-firefox" ] ->
             job {
                 Task.restore ()
                 Task.femto ()
-                Task.build Debug
+                Task.build Debug FireFox
+            }
+        | [ "build-chrome" ] ->
+            job {
+                Task.restore ()
+                Task.femto ()
+                Task.build Debug Chrome
             }
         | [ "subwatch" ] -> Task.watch ()
         | [ "watch" ] ->
             job {
                 Task.restore ()
                 Task.femto ()
-                Task.build Debug
+                Task.build Debug FireFox
                 Task.watch ()
             }
         | [ "bundle" ]
@@ -195,7 +211,7 @@ let main args =
             job {
                 Task.restore ()
                 Task.femto ()
-                Task.build Release
+                Task.build Release FireFox
                 Task.pack ()
             }
         | _ -> Job.error [ "Invalid input" ]
