@@ -7,6 +7,11 @@ type Config =
     { timePerUrl: int<s>
       urls: string list }
 
+[<RequireQualifiedAccess>]
+module Promise =
+    let fromContinuation continuation =
+        Promise.create (fun resolve _ -> continuation resolve)
+
 [<AutoOpen>]
 module Json =
     open Thoth.Json

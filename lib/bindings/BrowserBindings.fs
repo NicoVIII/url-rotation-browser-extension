@@ -100,10 +100,19 @@ module BrowserBindings =
                 abstract url: string option
 
             type T =
+                // Chrome uses Callbacks in MV2, but Firefox already uses Promises.
+                // Chrome does it in MV3, which isn't supported in Firefox
+#if CHROME
+                abstract create: CreateProperties -> (Tab -> unit) -> unit
+                //abstract remove: int -> (unit -> unit) -> unit // This causes a compiler error
+                abstract remove: ResizeArray<int> -> (unit -> unit) -> unit
+                abstract update: int option -> UpdateProperties -> (Tab -> unit) -> unit
+#else
                 abstract create: CreateProperties -> JS.Promise<Tab>
                 abstract remove: int -> JS.Promise<unit>
                 abstract remove: ResizeArray<int> -> JS.Promise<unit>
                 abstract update: int option -> UpdateProperties -> JS.Promise<Tab>
+#endif
 
                 abstract onActivated: TabsActivateEvent
                 abstract onRemoved: TabsRemoveEvent

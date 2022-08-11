@@ -43,16 +43,13 @@ module App =
         setState { state with config = loadConfig () }
 
     let closeTabs tabIds =
-        promise {
-            try
-                do!
-                    tabIds
-                    |> List.map TabId.toInt
-                    |> ResizeArray
-                    |> browser.tabs.remove
-            with
-            | x -> printfn "%A" x
-        }
+        tabIds
+        |> List.map TabId.toInt
+        |> ResizeArray
+        |> browser.tabs.remove
+#if CHROME
+        |> Promise.fromContinuation
+#endif
 
     let setCurrentTab tabId =
         Option.iter
@@ -63,17 +60,34 @@ module App =
 
     let setConfig config = setState { state with config = config }
 
+    let createTab props =
+#if CHROME
+        browser.tabs.create props
+        |> Promise.fromContinuation
+#else
+        browser.tabs.create props
+#endif
+
+    let updateTab tabId props =
+#if CHROME
+        browser.tabs.update tabId props
+        |> Promise.fromContinuation
+#else
+        browser.tabs.update tabId props
+#endif
+
     let openTabs urls =
         promise {
-            let! tab =
+            let tab1Props =
                 !!{| active = true
                      url = List.item 0 urls |}
-                |> browser.tabs.create
 
-            and! tab2 =
+            let tab2Props =
                 !!{| active = false
                      url = List.item 1 urls |}
-                |> browser.tabs.create
+
+            let! tab = createTab tab1Props
+            and! tab2 = createTab tab2Props
 
             let tabId1 = TabId.create tab.id.Value
             let tabId2 = TabId.create tab2.id.Value
@@ -95,9 +109,9 @@ module App =
 
                 automaticSwitch <- true
                 // Switch to other tab
-                let! _ = browser.tabs.update (nextTab |> TabId.toInt |> Some) !!{| active = true |}
+                let! _ = updateTab (nextTab |> TabId.toInt |> Some) !!{| active = true |}
                 // Preload page in inactive tab
-                let! _ = browser.tabs.update (currentTab |> TabId.toInt |> Some) !!{| url = nextNextUrl |}
+                let! _ = updateTab (currentTab |> TabId.toInt |> Some) !!{| url = nextNextUrl |}
                 automaticSwitch <- false
 
                 let play =
