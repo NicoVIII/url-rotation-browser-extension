@@ -5,14 +5,15 @@
 ![Last commit](https://img.shields.io/github/last-commit/NicoVIII/url-rotation-browser-extension?style=flat-square)
 
 This is a browser extension in development which can be used for screens which should show different
-urls. It is made for Firefox but will be made compatible with Chrome, if its ready.
+urls. It is made for Firefox but is theoretically compatible with Chrome.
 
 It is inspired by [Tab Rotate for Chrome](https://github.com/KevinSheedy/chrome-tab-rotate).
 
 ## Download
 
 * [Url Rotation (Firefox Add-Ons)](https://addons.mozilla.org/de/firefox/addon/url-rotation/)
-* _Still working on Chrome Support!_
+* _The extension itself is **Chrome-ready**, but to register an account to publish it, you have to pay money
+  Therefore I will not do that without a good reason._
 
 ## Usage
 
