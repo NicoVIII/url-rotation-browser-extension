@@ -223,6 +223,12 @@ module App =
 
 module Startup =
     let registerListeners () =
+        // Open settings on installed
+        browser.runtime.onInstalled.addListener (fun details ->
+            if details.reason = Install then
+                browser.runtime.openOptionsPage ()
+            else
+                ())
         // Start / Stop from browser action
         browser.browserAction.onClicked.addListener App.onBrowserAction
 

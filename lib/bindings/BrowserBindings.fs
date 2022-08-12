@@ -7,6 +7,11 @@ type BrowserEvent = Event
 
 module BrowserBindings =
     module Internal =
+        type Event<'Listener> =
+            abstract addListener: 'Listener -> unit
+            abstract removeListener: 'Listener -> unit
+            abstract hasListener: 'Listener -> unit
+
         type BrowserActionClickEvent =
             abstract addListener: (BrowserEvent -> unit) -> unit
 
@@ -17,7 +22,25 @@ module BrowserBindings =
             abstract onClicked: BrowserActionClickEvent
             abstract setIcon: IconDetails -> unit
 
+        [<StringEnum>]
+        type InstallEventReason =
+            | Install
+            | Update
+#if CHROME
+            | [<CompiledName("chrome-update")>] ChromeUpdate
+#else
+            | [<CompiledName("browser-update")>] BrowserUpdate
+#endif
+            | [<CompiledName("shared-module-update")>] SharedModuleUpdate
+
+        type InstallEventDetails =
+            abstract id: string option
+            abstract previousVersion: string option
+            abstract reason: InstallEventReason
+            abstract temporary: bool
+
         type Runtime =
+            abstract onInstalled: Event<InstallEventDetails -> unit>
             abstract openOptionsPage: unit -> unit
 
         type ActiveInfo =
@@ -28,14 +51,6 @@ module BrowserBindings =
         type RemoveInfo =
             abstract windowId: int
             abstract isWindowClosing: bool
-
-        type TabsActivateEvent =
-            abstract addListener: (ActiveInfo -> unit) -> unit
-            abstract removeListener: (ActiveInfo -> unit) -> unit
-
-        type TabsRemoveEvent =
-            abstract addListener: (int -> RemoveInfo -> unit) -> unit
-            abstract removeListener: (int -> RemoveInfo -> unit) -> unit
 
         module Tabs =
             [<StringEnum>]
@@ -114,8 +129,8 @@ module BrowserBindings =
                 abstract update: int option -> UpdateProperties -> JS.Promise<Tab>
 #endif
 
-                abstract onActivated: TabsActivateEvent
-                abstract onRemoved: TabsRemoveEvent
+                abstract onActivated: Event<ActiveInfo -> unit>
+                abstract onRemoved: Event<int -> RemoveInfo -> unit>
 
         type Browser =
             abstract browserAction: BrowserAction

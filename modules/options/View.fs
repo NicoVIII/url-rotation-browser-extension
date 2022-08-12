@@ -169,6 +169,9 @@ module View =
                     column.isFourFifthsMobile
                     prop.children [
                         Bulma.title "Settings"
+                        Bulma.block [
+                            prop.text Text.introduction
+                        ]
                         renderTabs state dispatch
                         renderTabView state dispatch
                     ]
