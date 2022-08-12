@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "url-rotation",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "author": "NicoVIII",
     "description": "This addon allows automatic rotating through a set of configured urls. Especially useful for screens which should show different websites for e.g. statistics.",
     "homepage_url": "https://github.com/NicoVIII/url-rotation-browser-extension",

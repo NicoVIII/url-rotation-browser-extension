@@ -10,7 +10,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        dotnet: [6.0.100]
+        dotnet: [6.0.301]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -34,9 +34,9 @@ jobs:
           rm -r $GITHUB_WORKSPACE/bin/sass_arch
           echo "$GITHUB_WORKSPACE/bin" >> $GITHUB_PATH
       - name: Setup pnpm
-        uses: pnpm/action-setup@v2.0.1
+        uses: pnpm/action-setup@v2.2.2
         with:
-          version: 6.20.3
+          version: 7.9.0
       - name: Restore
         run: dotnet run restore
       - name: Get Changelog Entry
