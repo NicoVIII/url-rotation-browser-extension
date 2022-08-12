@@ -143,7 +143,8 @@ module App =
             // We stop, when the tab is changed
             browser.tabs.onActivated.addListener onTabActivate
 
-            let intervalId = Interval.set (nextPage >> Promise.ignore) state.config.timePerUrl
+            let intervalId =
+                Interval.set (nextPage >> Promise.ignore) (sToMs state.config.timePerUrl)
 
             let play =
                 { page = 0
@@ -190,13 +191,19 @@ module App =
 #endif
             let tabId = info.tabId |> TabId.create
 
+            // On Chrome we can't update directly here, because chrome thinks the
+            // user is dragging a tab. Therefor we do this after a very short timeout
+            let pause () =
+                Timeout.set (fun () -> pause () |> Promise.ignore) 100<ms>
+                |> ignore
+
             match state.play, automaticSwitch with
             | Some play, true when not (List.contains tabId play.tabs) ->
                 // Some tab, which is not one of ours was activated, we pause
-                pause () |> Promise.ignore
+                pause ()
             | Some _, false ->
                 // Some tab was activated, but it wasn't us -> we pause
-                pause () |> Promise.ignore
+                pause ()
             | _ -> ()
 
     onTabRemove <-

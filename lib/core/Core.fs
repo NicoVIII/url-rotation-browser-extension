@@ -3,6 +3,13 @@ namespace UrlRotation
 [<Measure>]
 type s
 
+[<Measure>]
+type ms
+
+[<AutoOpen>]
+module Conversion =
+    let inline sToMs x : int<ms> = x * 1000<ms/s>
+
 type Config =
     { timePerUrl: int<s>
       urls: string list }

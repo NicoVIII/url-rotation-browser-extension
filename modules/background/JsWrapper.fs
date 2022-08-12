@@ -14,9 +14,8 @@ module JsWrapper =
             let create id : Id = id * 1<id>
             let unwrap (id: Id) = id / 1<id>
 
-        let set callback (time: int<s>) =
-            JS.setInterval callback (1000 * int time)
-            |> Id.create
+        let set callback (time: int<ms>) =
+            JS.setInterval callback (int time) |> Id.create
 
         let clear timeoutId = JS.clearInterval (Id.unwrap timeoutId)
 
@@ -33,8 +32,7 @@ module JsWrapper =
             let create id : Id = id * 1<id>
             let unwrap (id: Id) = id / 1<id>
 
-        let set callback (time: int<s>) =
-            JS.setTimeout callback (1000 * int time)
-            |> Id.create
+        let set callback (time: int<ms>) =
+            JS.setTimeout callback (int time) |> Id.create
 
         let clear timeoutId = JS.clearTimeout (Id.unwrap timeoutId)
