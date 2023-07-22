@@ -5,22 +5,27 @@
 	"build": {
 		"dockerfile": "Dockerfile",
 		"args": {
-			// Options
+			"VERSION": "0",
+			"VARIANT": "6.0-focal",
 			"NODE_VERSION": "lts/*",
 			"PNPM_VERSION": "^7.0.0"
 		}
 	},
-	// Set *default* container specific settings.json values on container create.
-	"settings": {
-		"FSharp.dotnetRoot": "/usr/bin"
+	"customizations": {
+		"vscode": {
+			// Set *default* container specific settings.json values on container create.
+			"settings": {
+				"FSharp.dotnetRoot": "/usr/bin"
+			},
+			// Add the IDs of extensions you want installed when the container is created.
+			"extensions": [
+				"editorconfig.editorconfig",
+				"Ionide.Ionide-fsharp",
+				"ms-dotnettools.csharp",
+				"github.copilot"
+			]
+		}
 	},
-	// Add the IDs of extensions you want installed when the container is created.
-	"extensions": [
-		"editorconfig.editorconfig",
-		"Ionide.Ionide-fsharp",
-		"ms-dotnettools.csharp",
-		"github.copilot"
-	],
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 	// Use 'postCreateCommand' to run commands after the container is created.
