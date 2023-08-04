@@ -10,7 +10,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        dotnet: [6.0.301]
+        dotnet: [7.0.305]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -20,9 +20,9 @@ jobs:
           echo ::set-output name=current_version::${GITHUB_REF#refs/tags/v}
         shell: bash
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup .NET Core
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v3
         with:
           dotnet-version: ${{ matrix.dotnet }}
       - name: Setup sass
@@ -34,9 +34,9 @@ jobs:
           rm -r $GITHUB_WORKSPACE/bin/sass_arch
           echo "$GITHUB_WORKSPACE/bin" >> $GITHUB_PATH
       - name: Setup pnpm
-        uses: pnpm/action-setup@v2.2.2
+        uses: pnpm/action-setup@v2.4
         with:
-          version: 7.9.0
+          version: 8.6.9
       - name: Restore
         run: dotnet run restore
       - name: Get Changelog Entry
