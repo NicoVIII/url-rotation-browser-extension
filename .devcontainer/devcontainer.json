@@ -5,10 +5,10 @@
 	"build": {
 		"dockerfile": "Dockerfile",
 		"args": {
-			"VERSION": "0",
-			"VARIANT": "6.0-focal",
+			"VERSION": "0.204.11",
+			"VARIANT": "7.0",
 			"NODE_VERSION": "lts/*",
-			"PNPM_VERSION": "^7.0.0"
+			"PNPM_VERSION": "^8.0.0"
 		}
 	},
 	"customizations": {
@@ -29,7 +29,5 @@
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "dotnet run restore",
-	// Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
-	"remoteUser": "vscode"
+	"postCreateCommand": "dotnet run restore"
 }

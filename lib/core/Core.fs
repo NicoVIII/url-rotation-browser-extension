@@ -8,7 +8,7 @@ type ms
 
 [<AutoOpen>]
 module Conversion =
-    let inline sToMs x : int<ms> = x * 1000<ms/s>
+    let inline sToMs x : int<ms> = x * 1000<ms / s>
 
 type Config =
     { timePerUrl: int<s>
@@ -23,7 +23,9 @@ module Promise =
 module Json =
     open Thoth.Json
 
-    let inline toJson spaces config = Encode.Auto.toString (spaces, config)
+    let inline toJson (spaces: int) (config: 'a) =
+        Encode.Auto.toString<'a> (spaces, config)
+
     let inline fromJson<'a> json = Decode.Auto.fromString<'a> json
 
 [<RequireQualifiedAccess>]
@@ -42,10 +44,7 @@ module Storage =
 
     let loadConfig () =
         let buildDefault () =
-            { urls =
-                [ "www.ecosia.org/"
-                  "duckduckgo.com/"
-                  "www.startpage.com/" ]
+            { urls = [ "www.ecosia.org/"; "duckduckgo.com/"; "www.startpage.com/" ]
 
               timePerUrl = 60<s> }
 
@@ -59,5 +58,4 @@ module Storage =
             | None -> buildDefault ()
 
     let saveConfig (config: Config) =
-        toJson 0 config
-        |> Internal.setItem Internal.configKey
+        toJson 0 config |> Internal.setItem Internal.configKey

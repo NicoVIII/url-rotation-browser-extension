@@ -1,7 +1,7 @@
 # Url Rotation
 
 [![Latest release](https://img.shields.io/github/v/release/NicoVIII/url-rotation-browser-extension?style=flat-square&sort=semver)](https://github.com/NicoVIII/url-rotation-browser-extension/releases/latest)
-[![GitHub Actions Build](https://img.shields.io/github/workflow/status/NicoVIII/url-rotation-browser-extension/Build?style=flat-square)](https://github.com/NicoVIII/url-rotation-browser-extension/actions/workflows/build.yml)
+[![GitHub Actions Build](https://img.shields.io/github/actions/workflow/status/NicoVIII/url-rotation-browser-extension/build.yml?style=flat-square)](https://github.com/NicoVIII/url-rotation-browser-extension/actions/workflows/build.yml)
 ![Last commit](https://img.shields.io/github/last-commit/NicoVIII/url-rotation-browser-extension?style=flat-square)
 
 This is a browser extension in development which can be used for screens which should show different

@@ -2,13 +2,13 @@
   "name": "url-rotation-browser-extension",
   "private": true,
   "devDependencies": {
-    "web-ext": "^7.1.1",
-    "webpack": "^5.74.0",
-    "webpack-cli": "^4.10.0"
+    "web-ext": "^7.6.2",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4"
   },
   "dependencies": {
     "bulma": "0.9.4",
-    "react": "17.0.2",
-    "react-dom": "17.0.2"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   }
 }

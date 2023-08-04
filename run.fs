@@ -47,7 +47,7 @@ module Task =
 
         job {
             for project in projects do
-                dotnet [ "femto"; "--resolve"; project ]
+                dotnet [ "femto"; project ]
         }
 
     let buildSass mode =
