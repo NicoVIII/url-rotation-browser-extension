@@ -10,7 +10,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        dotnet: [7.0.305]
+        dotnet: [8.0.403]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -24,15 +24,15 @@ jobs:
       - name: Setup sass
         run: |
           mkdir -p $GITHUB_WORKSPACE/bin/sass_arch
-          curl -sSL -o $GITHUB_WORKSPACE/bin/sass_arch/sass.tar.gz https://github.com/sass/dart-sass/releases/download/1.43.4/dart-sass-1.43.4-linux-x64.tar.gz
+          curl -sSL -o $GITHUB_WORKSPACE/bin/sass_arch/sass.tar.gz https://github.com/sass/dart-sass/releases/download/1.80.6/dart-sass-1.80.6-linux-x64.tar.gz
           tar xzvf $GITHUB_WORKSPACE/bin/sass_arch/sass.tar.gz -C $GITHUB_WORKSPACE/bin/sass_arch
-          mv $GITHUB_WORKSPACE/bin/sass_arch/dart-sass/sass $GITHUB_WORKSPACE/bin/
+          mv $GITHUB_WORKSPACE/bin/sass_arch/dart-sass/* $GITHUB_WORKSPACE/bin/
           rm -r $GITHUB_WORKSPACE/bin/sass_arch
           echo "$GITHUB_WORKSPACE/bin" >> $GITHUB_PATH
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 8.6.9
+          version: 9.12.3
       - name: Restore
         run: dotnet run restore
       - name: Run build
